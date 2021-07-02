@@ -1,0 +1,33 @@
+---
+title: "ST558 Project 2"
+author: "Crista Gregg, Halid Kopanski, Dionte Watie"
+date: "7/2/2021"
+output: 
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+# Introduction
+
+# Data
+```{r message=FALSE}
+set.seed(1)
+bikes <- read_csv('day.csv')
+train_rows <- sample(nrow(bikes), 0.7*nrow(bikes))
+train <- bikes[train_rows,]
+test <- bikes[-train_rows,]
+```
+
+# Summarizations
+
+## Linear Regression
+
+## Ensemble Tree
+
+# Modeling
+
+# Comparison
