@@ -2,6 +2,8 @@
 title: "ST558 Project 2"
 author: "Crista Gregg, Halid Kopanski, Dionte Watie"
 date: "7/2/2021"
+params:
+  day_of_week: "Monday"
 output: 
   github_document:
     toc: true
@@ -10,6 +12,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(caret)
 ```
 # Introduction
 
@@ -17,7 +20,21 @@ library(tidyverse)
 ```{r message=FALSE}
 set.seed(1)
 bikes <- read_csv('day.csv')
-day <- 1 #will need to automate this
+
+day_function <- function(x){
+  x <- as.character(x)
+  switch(x, "0" = "Sunday", 
+         "1" = "Monday", 
+         "2" = "Tuesday", 
+         "3" = "Wednesday", 
+         "4" = "Thursday", 
+         "5" = "Friday", 
+         "6" = "Saturday")
+}
+
+bikes <- bikes %>% select(everything()) %>% mutate(weekday = sapply(weekday, day_function))
+
+day <- params$day_of_week #will need to automate this
 
 #filter bikes by day of week
 bikes <- filter(bikes, weekday == day)
