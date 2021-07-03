@@ -13,6 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
+library(corrplot)
 ```
 # Introduction
 
@@ -141,6 +142,16 @@ bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth() +
                 ylab("Total Number of Users") +
                 theme_minimal()
 ```
+
+## Correlation among numeric predictors
+
+Here we are checking the correlation between the numeric predictors in the data
+
+```{r correlation}
+knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
+corrplot(cor(bikes[ , c(11:16)]), method = "circle")
+```
+
 
 # Modeling
 

@@ -8,6 +8,8 @@ Crista Gregg, Halid Kopanski, Dionte Watie
 -   [Summarizations](#summarizations)
     -   [Contributions from Crista](#contributions-from-crista)
     -   [Holiday and Temp/Hum data](#holiday-and-temphum-data)
+    -   [Correlation among numeric
+        predictors](#correlation-among-numeric-predictors)
 -   [Modeling](#modeling)
     -   [Linear Regression](#linear-regression)
     -   [Ensemble Tree](#ensemble-tree)
@@ -191,6 +193,30 @@ bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth() +
     ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
 
 ![](ST558-Project-2_files/figure-gfm/hum-1.png)<!-- -->
+
+## Correlation among numeric predictors
+
+Here we are checking the correlation between the numeric predictors in
+the data
+
+``` r
+knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
+```
+
+|            |  atemp |    hum | windspeed | casual | registered |    cnt |
+|:-----------|-------:|-------:|----------:|-------:|-----------:|-------:|
+| atemp      |  1.000 |  0.218 |    -0.059 |  0.712 |      0.560 |  0.666 |
+| hum        |  0.218 |  1.000 |    -0.418 |  0.035 |     -0.008 |  0.003 |
+| windspeed  | -0.059 | -0.418 |     1.000 | -0.081 |     -0.171 | -0.166 |
+| casual     |  0.712 |  0.035 |    -0.081 |  1.000 |      0.477 |  0.676 |
+| registered |  0.560 | -0.008 |    -0.171 |  0.477 |      1.000 |  0.970 |
+| cnt        |  0.666 |  0.003 |    -0.166 |  0.676 |      0.970 |  1.000 |
+
+``` r
+corrplot(cor(bikes[ , c(11:16)]), method = "circle")
+```
+
+![](ST558-Project-2_files/figure-gfm/correlation-1.png)<!-- -->
 
 # Modeling
 
