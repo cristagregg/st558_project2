@@ -1,7 +1,7 @@
 library(tidyverse)
 library(caret)
 
-bike_day <- read_csv("day.csv")
+bikes <- read_csv("day.csv")
 #bike_hour <- read_csv("hour.csv")
 
 day_function <- function(x){

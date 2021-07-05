@@ -17,6 +17,8 @@ library(corrplot)
 ```
 # Introduction
 
+
+
 # Data
 ```{r message=FALSE}
 set.seed(1)
@@ -44,6 +46,14 @@ season_function <- function(x){
 bikes <- bikes %>% select(everything()) %>% 
   mutate(weekday = sapply(weekday, day_function), 
          season = sapply(season, season_function))
+
+bikes$season <- as.factor(bikes$season)
+bikes$yr <- as.factor(bikes$yr)
+#bikes$mnth <- as.factor(bikes$mnth)
+bikes$holiday <- as.factor(bikes$holiday)
+bikes$weekday <- as.factor(bikes$weekday)
+bikes$workingday <- as.factor(bikes$workingday)
+bikes$weathersit <- as.factor(bikes$weathersit)
 
 day <- params$day_of_week #will need to automate this
 
@@ -136,7 +146,7 @@ ggplot(bike_temp, aes(x = temp_norm, y = cnt, col = type, shape = type)) +
 Next the affect of humidity:
 
 ```{r hum}
-bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth() +
+bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
                 labs(title = paste("Humidity versus Total Users on", params$day_of_week)) +
                 xlab("Humidity (normalized)") +
                 ylab("Total Number of Users") +
@@ -159,6 +169,41 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 
 ## Ensemble Tree
 
+```{r ensemble}
+
+
+```
+
 # Modeling
+
+```{r boosting, results='hide', message = FALSE, warning = FALSE}
+
+trctrl <- trainControl(method = "repeatedcv", 
+                       number = 10, 
+                       repeats = 3)
+
+set.seed(2020)
+
+boost_grid <- expand.grid(n.trees = c(20, 100, 500),
+                          interaction.depth = c(1, 3, 5),
+                          shrinkage = c(0.1, 0.01, 0.001),
+                          n.minobsinnode = 10)
+
+boost_fit <-  train(cnt ~ ., 
+                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
+                    method = "gbm", 
+                    trControl = trctrl, 
+                    tuneGrid = data.frame(boost_grid))
+```
+
+```{r}
+print(boost_fit)
+
+results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
+
+boost_min <- which.min(results_tab$RMSE)
+
+knitr::kable(results_tab[boost_min,])
+```
 
 # Comparison
