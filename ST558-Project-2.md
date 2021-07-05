@@ -18,6 +18,44 @@ Crista Gregg, Halid Kopanski, Dionte Watie
 
 # Introduction
 
+The following analysis breaks down bicycle sharing usage based on data
+gathered for every recorded Monday in the years 2011 and 2012. The data
+was gathered from users of Capitol Bikeshare based in Washington DC. In
+total, the dataset contains 731 entries. For each entry, 16 variables
+were recorded. The following is the list of the 16 variables and a short
+description of each:
+
+| Variable   |                                                    Description                                                    |
+|------------|:-----------------------------------------------------------------------------------------------------------------:|
+| instant    |                                                   record index                                                    |
+| dteday     |                                                       date                                                        |
+| season     |                                       season (winter, spring, summer, fall)                                       |
+| yr         |                                                 year (2011, 2012)                                                 |
+| mnth       |                                                 month of the year                                                 |
+| holiday    |                            whether day is holiday or not (extracted from \[Web Link\])                            |
+| weekday    |                                                  day of the week                                                  |
+| workingday |                            if day is neither weekend nor holiday is 1, otherwise is 0.                            |
+| weathersit |                                                                                                                   |
+| \-         |                                1: Clear, Few clouds, Partly cloudy, Partly cloudy                                 |
+| \-         |                          2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist                          |
+| \-         |            3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds             |
+| \-         |                           4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog                           |
+| temp       |                                        Normalized temperature in Celsius.                                         |
+| atemp      |                                   Normalized perceived temperature in Celsius.                                    |
+| hum        |                                               Normalized humidity.                                                |
+| windspeed  |                                              Normalized wind speed.                                               |
+| casual     |                                               count of casual users                                               |
+| registered |                                             count of registered users                                             |
+| cnt        |                                      sum of both casual and registered users                                      |
+| *Sources*  | *Raw data and more information can be found [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)* |
+
+In addition to summary statistics, this report will also model bicycle
+users linear regression, random forests, and boosting. The model will
+help determine anticipated number of users based on readily available
+data. To achieve this, the response variables are casual, registered,
+and cnt. The other 13 variables will be the predictors for models
+developed later in this report.
+
 # Data
 
 ``` r

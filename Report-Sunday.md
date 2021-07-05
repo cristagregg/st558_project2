@@ -7,6 +7,9 @@ Crista Gregg, Halid Kopanski, Dionte Watie
 -   [Data](#data)
 -   [Summarizations](#summarizations)
     -   [Contributions from Crista](#contributions-from-crista)
+    -   [Holiday and Temp/Hum data](#holiday-and-temphum-data)
+    -   [Correlation among numeric
+        predictors](#correlation-among-numeric-predictors)
 -   [Modeling](#modeling)
     -   [Linear Regression](#linear-regression)
     -   [Ensemble Tree](#ensemble-tree)
@@ -14,6 +17,44 @@ Crista Gregg, Halid Kopanski, Dionte Watie
 -   [Comparison](#comparison)
 
 # Introduction
+
+The following analysis breaks down bicycle sharing usage based on data
+gathered for every recorded Sunday in the years 2011 and 2012. The data
+was gathered from users of Capitol Bikeshare based in Washington DC. In
+total, the dataset contains 731 entries. For each entry, 16 variables
+were recorded. The following is the list of the 16 variables and a short
+description of each:
+
+| Variable   |                                                    Description                                                    |
+|------------|:-----------------------------------------------------------------------------------------------------------------:|
+| instant    |                                                   record index                                                    |
+| dteday     |                                                       date                                                        |
+| season     |                                       season (winter, spring, summer, fall)                                       |
+| yr         |                                                 year (2011, 2012)                                                 |
+| mnth       |                                                 month of the year                                                 |
+| holiday    |                            whether day is holiday or not (extracted from \[Web Link\])                            |
+| weekday    |                                                  day of the week                                                  |
+| workingday |                            if day is neither weekend nor holiday is 1, otherwise is 0.                            |
+| weathersit |                                                                                                                   |
+| \-         |                                1: Clear, Few clouds, Partly cloudy, Partly cloudy                                 |
+| \-         |                          2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist                          |
+| \-         |            3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds             |
+| \-         |                           4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog                           |
+| temp       |                                        Normalized temperature in Celsius.                                         |
+| atemp      |                                   Normalized perceived temperature in Celsius.                                    |
+| hum        |                                               Normalized humidity.                                                |
+| windspeed  |                                              Normalized wind speed.                                               |
+| casual     |                                               count of casual users                                               |
+| registered |                                             count of registered users                                             |
+| cnt        |                                      sum of both casual and registered users                                      |
+| *Sources*  | *Raw data and more information can be found [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)* |
+
+In addition to summary statistics, this report will also model bicycle
+users linear regression, random forests, and boosting. The model will
+help determine anticipated number of users based on readily available
+data. To achieve this, the response variables are casual, registered,
+and cnt. The other 13 variables will be the predictors for models
+developed later in this report.
 
 # Data
 
@@ -32,7 +73,25 @@ day_function <- function(x){
          "6" = "Saturday")
 }
 
-bikes <- bikes %>% select(everything()) %>% mutate(weekday = sapply(weekday, day_function))
+season_function <- function(x){
+    x <- as.character(x)
+    switch(x, "1" = "Spring",
+              "2" = "Summer",
+              "3" = "Fall",
+              "4" = "Winter")
+}
+
+bikes <- bikes %>% select(everything()) %>% 
+  mutate(weekday = sapply(weekday, day_function), 
+         season = sapply(season, season_function))
+
+bikes$season <- as.factor(bikes$season)
+bikes$yr <- as.factor(bikes$yr)
+#bikes$mnth <- as.factor(bikes$mnth)
+bikes$holiday <- as.factor(bikes$holiday)
+bikes$weekday <- as.factor(bikes$weekday)
+bikes$workingday <- as.factor(bikes$workingday)
+bikes$weathersit <- as.factor(bikes$weathersit)
 
 day <- params$day_of_week #will need to automate this
 
@@ -58,10 +117,10 @@ bikes %>%
 ```
 
     ## # A tibble: 2 x 3
-    ##      yr total_rentals avg_rentals
-    ##   <dbl>         <dbl>       <dbl>
-    ## 1     0        177074        3405
-    ## 2     1        266953        5037
+    ##   yr    total_rentals avg_rentals
+    ##   <fct>         <dbl>       <dbl>
+    ## 1 0            177074        3405
+    ## 2 1            266953        5037
 
 The following box plot shows us how many rentals we have for days that
 are sunny or partly cloudy, misty, or rainy/snowy. We may expect some
@@ -77,7 +136,7 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 Below is a chart of the relationship between casual and registered
 bikers. We might expect a change in the slope if we look at different
@@ -94,7 +153,7 @@ ggplot(bikes, aes(casual, registered)) +
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 Below we see a plot of the average daily number of bikers by month. We
 should expect to see more bikers in the spring and summer months, and
@@ -115,7 +174,93 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
     ## Warning: Continuous limits supplied to discrete scale.
     ## Did you mean `limits = factor(...)` or `scale_*_continuous()`?
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+
+## Holiday and Temp/Hum data
+
+We would like to see what affect public holidays have on the types of
+bicycle users for a given day. In this case, Sunday show the following
+relationships:
+
+``` r
+bikes %>% ggplot(aes(x = as.factor(workingday), y = casual)) + geom_boxplot() + 
+                labs(title = paste("Casual Users on", params$day_of_week)) + 
+                xlab("") + 
+                ylab("Casual Users") + 
+                scale_x_discrete(labels = c('Public Holiday', 'Workday')) + 
+                theme_minimal()
+```
+
+![](Report-Sunday_files/figure-gfm/holiday-1.png)<!-- -->
+
+``` r
+bikes %>% ggplot(aes(x = as.factor(workingday), y = registered)) + geom_boxplot() + 
+                labs(title = paste("Registered Users on", params$day_of_week)) + 
+                xlab("") + 
+                ylab("Registered Users") +
+                scale_x_discrete(labels = c('Public Holiday', 'Workday')) +
+                theme_minimal()
+```
+
+![](Report-Sunday_files/figure-gfm/holiday-2.png)<!-- -->
+
+Temperature and Humidity have an affect on the number of users on a
+given day
+
+First, normalized temperature data (both actual temperature and
+perceived):
+
+``` r
+bike_temp <- bikes %>% select(cnt, temp, atemp) %>% 
+                    gather(key = type, value = temp_norm, temp, atemp, factor_key = FALSE)
+
+ggplot(bike_temp, aes(x = temp_norm, y = cnt, col = type, shape = type)) + 
+        geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
+        scale_color_discrete(name = "Temp Type", labels = c("Perceived", "Actual")) +
+        scale_shape_discrete(name = "Temp Type", labels = c("Perceived", "Actual")) +
+        labs(title = paste("Temperature on", params$day_of_week, "(Actual and Perceived)")) +
+        xlab("Normalized Temperatures") +
+        ylab("Total Users") + 
+        theme_minimal()
+```
+
+![](Report-Sunday_files/figure-gfm/temp_hum-1.png)<!-- -->
+
+Next the affect of humidity:
+
+``` r
+bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
+                labs(title = paste("Humidity versus Total Users on", params$day_of_week)) +
+                xlab("Humidity (normalized)") +
+                ylab("Total Number of Users") +
+                theme_minimal()
+```
+
+![](Report-Sunday_files/figure-gfm/hum-1.png)<!-- -->
+
+## Correlation among numeric predictors
+
+Here we are checking the correlation between the numeric predictors in
+the data
+
+``` r
+knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
+```
+
+|            |  atemp |    hum | windspeed | casual | registered |    cnt |
+|:-----------|-------:|-------:|----------:|-------:|-----------:|-------:|
+| atemp      |  1.000 |  0.235 |    -0.230 |  0.729 |      0.587 |  0.685 |
+| hum        |  0.235 |  1.000 |    -0.274 |  0.050 |      0.007 |  0.026 |
+| windspeed  | -0.230 | -0.274 |     1.000 | -0.231 |     -0.273 | -0.272 |
+| casual     |  0.729 |  0.050 |    -0.231 |  1.000 |      0.764 |  0.914 |
+| registered |  0.587 |  0.007 |    -0.273 |  0.764 |      1.000 |  0.960 |
+| cnt        |  0.685 |  0.026 |    -0.272 |  0.914 |      0.960 |  1.000 |
+
+``` r
+corrplot(cor(bikes[ , c(11:16)]), method = "circle")
+```
+
+![](Report-Sunday_files/figure-gfm/correlation-1.png)<!-- -->
 
 # Modeling
 
@@ -124,5 +269,83 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
 ## Ensemble Tree
 
 # Modeling
+
+``` r
+trctrl <- trainControl(method = "repeatedcv", 
+                       number = 10, 
+                       repeats = 3)
+
+set.seed(2020)
+
+boost_grid <- expand.grid(n.trees = c(20, 100, 500),
+                          interaction.depth = c(1, 3, 5),
+                          shrinkage = c(0.1, 0.01, 0.001),
+                          n.minobsinnode = 10)
+
+boost_fit <-  train(cnt ~ ., 
+                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
+                    method = "gbm", 
+                    trControl = trctrl, 
+                    tuneGrid = data.frame(boost_grid))
+```
+
+``` r
+print(boost_fit)
+```
+
+    ## Stochastic Gradient Boosting 
+    ## 
+    ## 73 samples
+    ##  7 predictor
+    ## 
+    ## No pre-processing
+    ## Resampling: Cross-Validated (10 fold, repeated 3 times) 
+    ## Summary of sample sizes: 66, 65, 65, 65, 65, 65, ... 
+    ## Resampling results across tuning parameters:
+    ## 
+    ##   shrinkage  interaction.depth  n.trees  RMSE      Rsquared   MAE      
+    ##   0.001      1                   20      1840.274  0.5731700  1492.9448
+    ##   0.001      1                  100      1771.255  0.5762571  1435.0782
+    ##   0.001      1                  500      1530.326  0.5761193  1246.5530
+    ##   0.001      3                   20      1839.035  0.6212258  1491.8567
+    ##   0.001      3                  100      1765.472  0.6189569  1429.9138
+    ##   0.001      3                  500      1502.440  0.6241954  1222.8622
+    ##   0.001      5                   20      1839.270  0.6136201  1492.1937
+    ##   0.001      5                  100      1766.023  0.6148733  1430.3663
+    ##   0.001      5                  500      1501.900  0.6250300  1221.8237
+    ##   0.010      1                   20      1697.665  0.5633687  1376.5952
+    ##   0.010      1                  100      1389.918  0.5779336  1159.1266
+    ##   0.010      1                  500      1222.832  0.6190666  1073.5005
+    ##   0.010      3                   20      1687.141  0.6102919  1365.4401
+    ##   0.010      3                  100      1337.045  0.6301040  1112.6265
+    ##   0.010      3                  500      1164.931  0.6475974  1001.5715
+    ##   0.010      5                   20      1687.537  0.6066940  1365.5793
+    ##   0.010      5                  100      1336.163  0.6324267  1113.4914
+    ##   0.010      5                  500      1161.679  0.6552263  1001.3497
+    ##   0.100      1                   20      1283.582  0.5974780  1098.4953
+    ##   0.100      1                  100      1177.186  0.6389430  1027.2645
+    ##   0.100      1                  500      1257.072  0.5983659  1064.7413
+    ##   0.100      3                   20      1252.418  0.6159295  1084.2624
+    ##   0.100      3                  100      1208.206  0.6246697  1017.3552
+    ##   0.100      3                  500      1307.798  0.5706488  1076.9113
+    ##   0.100      5                   20      1232.841  0.6328954  1066.7053
+    ##   0.100      5                  100      1174.029  0.6361333   988.6317
+    ##   0.100      5                  500      1303.932  0.5701083  1082.0755
+    ## 
+    ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
+    ## RMSE was used to select the optimal model using the smallest value.
+    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage = 0.01 and n.minobsinnode = 10.
+
+``` r
+results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
+
+boost_min <- which.min(results_tab$RMSE)
+
+knitr::kable(results_tab[boost_min,])
+```
+
+| shrinkage | interaction.depth | n.trees |     RMSE |  Rsquared |
+|----------:|------------------:|--------:|---------:|----------:|
+|      0.01 |                 5 |     500 | 1161.679 | 0.6552263 |
 
 # Comparison
