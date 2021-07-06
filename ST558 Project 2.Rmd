@@ -1,6 +1,6 @@
 ---
 title: "ST558 Project 2"
-author: "Crista Gregg, Halid Kopanski, Dionte Watie"
+author: "Crista Gregg and Halid Kopanski"
 date: "7/2/2021"
 params:
   day_of_week: "Monday"
@@ -71,28 +71,34 @@ season_function <- function(x){
 
 bikes <- bikes %>% select(everything()) %>% 
   mutate(weekday = sapply(weekday, day_function), 
-         season = sapply(season, season_function))
+         season = sapply(season, season_function)) 
+  
 
 bikes$season <- as.factor(bikes$season)
 bikes$yr <- as.factor(bikes$yr)
-#bikes$mnth <- as.factor(bikes$mnth)
+levels(bikes$yr) <- c('2019','2020')
+bikes$mnth <- as.factor(bikes$mnth)
 bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
 bikes$workingday <- as.factor(bikes$workingday)
 bikes$weathersit <- as.factor(bikes$weathersit)
 
-day <- params$day_of_week #will need to automate this
+day <- params$day_of_week
 
 #filter bikes by day of week
 bikes <- filter(bikes, weekday == day)
+
+#split data into train and test sets
 train_rows <- sample(nrow(bikes), 0.7*nrow(bikes))
-train <- bikes[train_rows,]
-test <- bikes[-train_rows,]
+train <- bikes[train_rows,] %>% 
+  select(-instant, -weekday, -casual, -registered)
+test <- bikes[-train_rows,] %>% 
+  select(-instant, -weekday, -casual, -registered)
 ```
 
 # Summarizations
 
-## Contributions from Crista
+## Rentals by Year
 
 The following table tells us the total number of rentals for each of the two years of collected data, as well as the average number of rentals per day.
 ```{r}
@@ -100,6 +106,7 @@ bikes %>%
   group_by(yr) %>%
   summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
 ```
+## Rentals by Weather  
 
 The following box plot shows us how many rentals we have for days that are sunny or partly cloudy, misty, or rainy/snowy. We may expect some differences in behavior between weekend days where less people might be inclined to ride their bikes for pleasure, versus weekdays when more people might brave moderately unpleasant weather to get to work. 
 ```{r}
@@ -110,6 +117,8 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
+## Casual vs. Registered bikers  
+
 Below is a chart of the relationship between casual and registered bikers. We might expect a change in the slope if we look at different days of the week. Perhaps we see more registered bikers riding on the weekday but more casual users on the weekend. 
 ```{r}
 ggplot(bikes, aes(casual, registered)) +
@@ -118,6 +127,8 @@ ggplot(bikes, aes(casual, registered)) +
   theme_minimal() +
   labs(title = 'Registered versus Casual Renters')
 ```
+
+## Average bikers by month  
 
 Below we see a plot of the average daily number of bikers by month. We should expect to see more bikers in the spring and summer months, and the least in the winter. 
 ```{r}
@@ -192,15 +203,35 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 # Modeling
 
 ## Linear Regression
+Linear regression is one of the most common methods for modeling. It looks at a set of predictors and estimates what will happen to the response if the predictors change. This model is highly interpretable, as it shows us the effect of each individual predictor as well as interactions. We can see if the change in the response goes up or down and in what quantity. Below we fit two linear regression models, one with all predictor. 
+
+### Linear Fit 1
+```{r select subset of predictors}
+lm_fit_select <- lm(cnt ~ ., data = train[,2:12])
+summary(lm_fit_select)
+step(lm_fit_select)
+```
+```{r}
+lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
+                preProcess = c('center', 'scale'),
+                trControl = trainControl(method = 'cv', number = 10))
+lm.fit
+```
+
+Our first linear model has an R^2^ of `r lm.fit$results$RMSE`.  
+
+### Linear Fit 2
 
 ## Ensemble Tree
+
+### Random Forests
 
 ```{r ensemble}
 
 
 ```
 
-# Modeling
+### Boosting Model
 
 ```{r boosting, results='hide', message = FALSE, warning = FALSE}
 
