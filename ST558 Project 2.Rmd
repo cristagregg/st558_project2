@@ -209,11 +209,13 @@ Linear regression is one of the most common methods for modeling. It looks at a 
 ### Linear Fit 1  
 The first model will have a subset of predictors chosen by stepwise selection. 
 ```{r select subset of predictors, include=FALSE}
-lm_fit_select <- lm(cnt ~ ., data = train[,2:12])
-summary(lm_fit_select)
+lm_fit_select <- lm(cnt ~ . -holiday-workingday, data = train[,2:12])
+summary(lm_fit_select) 
 step(lm_fit_select)
 ```
+
 ```{r}
+set.seed(10)
 lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
@@ -224,7 +226,23 @@ Our first linear model has an R^2^ of `r lm.fit$results$RMSE`.
 
 ### Linear Fit 2
 
+Using transformations of predictors identified in the first linear fit and dropping the year predictor (in an effort to forecast future usage). 
+
+```{r lm_fit2, warning=FALSE, message=FALSE}
+set.seed(10)
+lm.fit1 <- train(cnt ~ season + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+                preProcess = c('center', 'scale'),
+                trControl = trainControl(method = 'cv', number = 10))
+lm.fit1
+
+```
+
+The R^2^ value of the model changed to `r lm.fit1$results$RMSE`
+
+
 ## Ensemble Tree
+
+Ensemble trees methods come in many types and are very versatile when it comes to regression or classification. For the following we will be using the two most common and well known methods, Random Forests (a form of bagging) and Boosting. Both these tree based methods involve optimization during the development process. In the case of random forests, the optimization involves varying the number of predictors used. This is done to mitigate the effects of one or more predictors from overshadowing other predictors. Boosting is method where the final model is developed through an iterative combination of weaker models where each interation builds upon the last. While both methods are very flexible and tend to process good results the models themselves are as interpretable as linear regression. We normally just analyze the output of the models.   
 
 ### Random Forests
 
@@ -235,7 +253,9 @@ Our first linear model has an R^2^ of `r lm.fit$results$RMSE`.
 
 ### Boosting Model
 
-```{r boosting, results='hide', message = FALSE, warning = FALSE}
+The following are the results of Boosting model development using the provided bike data
+
+```{r boosting, message = FALSE, warning = FALSE}
 
 trctrl <- trainControl(method = "repeatedcv", 
                        number = 10, 
@@ -256,11 +276,17 @@ boost_fit <-  train(cnt ~ .,
                     tuneGrid = data.frame(boost_grid))
 ```
 
+A total of `r nrow(boost_fit$results)` models were evaluated. Each differing by the combination of boosting parameters. The results are show below:
+
 ```{r}
 print(boost_fit)
 
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
+```
 
+The attributes of the best model is shown here. 
+
+```{r}
 boost_min <- which.min(results_tab$RMSE)
 
 knitr::kable(results_tab[boost_min,])
