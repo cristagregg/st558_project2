@@ -1,19 +1,25 @@
 ST558 Project 2
 ================
-Crista Gregg, Halid Kopanski, Dionte Watie
+Crista Gregg and Halid Kopanski
 7/2/2021
 
 -   [Introduction](#introduction)
 -   [Data](#data)
 -   [Summarizations](#summarizations)
-    -   [Contributions from Crista](#contributions-from-crista)
+    -   [Rentals by Year](#rentals-by-year)
+    -   [Rentals by Weather](#rentals-by-weather)
+    -   [Casual vs. Registered bikers](#casual-vs-registered-bikers)
+    -   [Average bikers by month](#average-bikers-by-month)
     -   [Holiday and Temp/Hum data](#holiday-and-temphum-data)
     -   [Correlation among numeric
         predictors](#correlation-among-numeric-predictors)
 -   [Modeling](#modeling)
     -   [Linear Regression](#linear-regression)
+        -   [Linear Fit 1](#linear-fit-1)
+        -   [Linear Fit 2](#linear-fit-2)
     -   [Ensemble Tree](#ensemble-tree)
--   [Modeling](#modeling-1)
+        -   [Random Forests](#random-forests)
+        -   [Boosting Model](#boosting-model)
 -   [Comparison](#comparison)
 
 # Introduction
@@ -83,28 +89,34 @@ season_function <- function(x){
 
 bikes <- bikes %>% select(everything()) %>% 
   mutate(weekday = sapply(weekday, day_function), 
-         season = sapply(season, season_function))
+         season = sapply(season, season_function)) 
+  
 
 bikes$season <- as.factor(bikes$season)
 bikes$yr <- as.factor(bikes$yr)
-#bikes$mnth <- as.factor(bikes$mnth)
+levels(bikes$yr) <- c('2019','2020')
+bikes$mnth <- as.factor(bikes$mnth)
 bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
 bikes$workingday <- as.factor(bikes$workingday)
 bikes$weathersit <- as.factor(bikes$weathersit)
 
-day <- params$day_of_week #will need to automate this
+day <- params$day_of_week
 
 #filter bikes by day of week
 bikes <- filter(bikes, weekday == day)
+
+#split data into train and test sets
 train_rows <- sample(nrow(bikes), 0.7*nrow(bikes))
-train <- bikes[train_rows,]
-test <- bikes[-train_rows,]
+train <- bikes[train_rows,] %>% 
+  select(-instant, -weekday, -casual, -registered)
+test <- bikes[-train_rows,] %>% 
+  select(-instant, -weekday, -casual, -registered)
 ```
 
 # Summarizations
 
-## Contributions from Crista
+## Rentals by Year
 
 The following table tells us the total number of rentals for each of the
 two years of collected data, as well as the average number of rentals
@@ -119,8 +131,10 @@ bikes %>%
     ## # A tibble: 2 x 3
     ##   yr    total_rentals avg_rentals
     ##   <fct>         <dbl>       <dbl>
-    ## 1 0            177074        3405
-    ## 2 1            266953        5037
+    ## 1 2019         177074        3405
+    ## 2 2020         266953        5037
+
+## Rentals by Weather
 
 The following box plot shows us how many rentals we have for days that
 are sunny or partly cloudy, misty, or rainy/snowy. We may expect some
@@ -136,7 +150,9 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+## Casual vs. Registered bikers
 
 Below is a chart of the relationship between casual and registered
 bikers. We might expect a change in the slope if we look at different
@@ -153,7 +169,9 @@ ggplot(bikes, aes(casual, registered)) +
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+## Average bikers by month
 
 Below we see a plot of the average daily number of bikers by month. We
 should expect to see more bikers in the spring and summer months, and
@@ -165,16 +183,14 @@ plot_mth <- bikes %>%
   summarize(avg_bikers = mean(cnt))
 
 ggplot(plot_mth, aes(mnth, avg_bikers)) +
-  geom_line(color = 'darkblue', size = 1.6) +
+  geom_line(group = 1, color = 'darkblue', size = 1.2) +
+  geom_point(size = 2) +
   theme_minimal() +
   labs(title='Average daily number of bikers by month', y = 'Average Daily Bikers', x = 'Month') +
-  scale_x_discrete(limits = 1:12, labels = month.abb)
+  scale_x_discrete(labels = month.abb)
 ```
 
-    ## Warning: Continuous limits supplied to discrete scale.
-    ## Did you mean `limits = factor(...)` or `scale_*_continuous()`?
-
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ## Holiday and Temp/Hum data
 
@@ -266,9 +282,102 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 
 ## Linear Regression
 
+Linear regression is one of the most common methods for modeling. It
+looks at a set of predictors and estimates what will happen to the
+response if the predictors change. This model is highly interpretable,
+as it shows us the effect of each individual predictor as well as
+interactions. We can see if the change in the response goes up or down
+and in what quantity. Below we fit two linear regression models.
+
+### Linear Fit 1
+
+The first model will have a subset of predictors chosen by stepwise
+selection.
+
+``` r
+set.seed(10)
+lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
+                preProcess = c('center', 'scale'),
+                trControl = trainControl(method = 'cv', number = 10))
+```
+
+    ## Warning in preProcess.default(thresh = 0.95, k = 5, freqCut = 19, uniqueCut = 10, : These variables have zero variances: weathersit3
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit may be misleading
+
+``` r
+lm.fit
+```
+
+    ## Linear Regression 
+    ## 
+    ## 73 samples
+    ##  6 predictor
+    ## 
+    ## Pre-processing: centered (9), scaled (9) 
+    ## Resampling: Cross-Validated (10 fold) 
+    ## Summary of sample sizes: 65, 65, 66, 65, 66, 66, ... 
+    ## Resampling results:
+    ## 
+    ##   RMSE      Rsquared  MAE     
+    ##   1026.189  0.69611   797.5713
+    ## 
+    ## Tuning parameter 'intercept' was held constant at a value of TRUE
+
+Our first linear model has an R<sup>2</sup> of 1026.1885563.
+
+### Linear Fit 2
+
+Using transformations of predictors identified in the first linear fit
+and dropping the year predictor (in an effort to forecast future usage).
+
+``` r
+set.seed(10)
+lm.fit1 <- train(cnt ~ season + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+                preProcess = c('center', 'scale'),
+                trControl = trainControl(method = 'cv', number = 10))
+lm.fit1
+```
+
+    ## Linear Regression 
+    ## 
+    ## 73 samples
+    ##  5 predictor
+    ## 
+    ## Pre-processing: centered (10), scaled (10) 
+    ## Resampling: Cross-Validated (10 fold) 
+    ## Summary of sample sizes: 65, 65, 66, 65, 66, 66, ... 
+    ## Resampling results:
+    ## 
+    ##   RMSE      Rsquared   MAE     
+    ##   1226.021  0.6135773  1015.585
+    ## 
+    ## Tuning parameter 'intercept' was held constant at a value of TRUE
+
+The R<sup>2</sup> value of the model changed to 1226.0214354
+
 ## Ensemble Tree
 
-# Modeling
+Ensemble trees methods come in many types and are very versatile when it
+comes to regression or classification. For the following we will be
+using the two most common and well known methods, Random Forests (a form
+of bagging) and Boosting. Both these tree based methods involve
+optimization during the development process. In the case of random
+forests, the optimization involves varying the number of predictors
+used. This is done to mitigate the effects of one or more predictors
+from overshadowing other predictors. Boosting is method where the final
+model is developed through an iterative combination of weaker models
+where each interation builds upon the last. While both methods are very
+flexible and tend to process good results the models themselves are as
+interpretable as linear regression. We normally just analyze the output
+of the models.
+
+### Random Forests
+
+### Boosting Model
+
+The following are the results of Boosting model development using the
+provided bike data
 
 ``` r
 trctrl <- trainControl(method = "repeatedcv", 
@@ -285,9 +394,13 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
 boost_fit <-  train(cnt ~ ., 
                     data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
                     method = "gbm", 
+                    verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
                     tuneGrid = data.frame(boost_grid))
 ```
+
+A total of 27 models were evaluated. Each differing by the combination
+of boosting parameters. The results are show below:
 
 ``` r
 print(boost_fit)
@@ -338,7 +451,11 @@ print(boost_fit)
 
 ``` r
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
+```
 
+The attributes of the best model is shown here.
+
+``` r
 boost_min <- which.min(results_tab$RMSE)
 
 knitr::kable(results_tab[boost_min,])

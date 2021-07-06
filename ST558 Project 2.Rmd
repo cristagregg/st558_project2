@@ -209,7 +209,7 @@ Linear regression is one of the most common methods for modeling. It looks at a 
 ### Linear Fit 1  
 The first model will have a subset of predictors chosen by stepwise selection. 
 ```{r select subset of predictors, include=FALSE}
-lm_fit_select <- lm(cnt ~ . -holiday-workingday, data = train[,2:12])
+lm_fit_select <- lm(cnt ~ ., data = train[ , c(2:4, 7:12)])
 summary(lm_fit_select) 
 step(lm_fit_select)
 ```

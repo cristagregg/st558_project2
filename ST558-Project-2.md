@@ -401,8 +401,8 @@ boost_fit <-  train(cnt ~ .,
                     tuneGrid = data.frame(boost_grid))
 ```
 
-A total of 27 models were evaluated each differing by the combination of
-boosting parameters. The results are show below:
+A total of 27 models were evaluated. Each differing by the combination
+of boosting parameters. The results are show below:
 
 ``` r
 print(boost_fit)
