@@ -137,10 +137,11 @@ plot_mth <- bikes %>%
   summarize(avg_bikers = mean(cnt))
 
 ggplot(plot_mth, aes(mnth, avg_bikers)) +
-  geom_line(color = 'darkblue', size = 1.6) +
+  geom_line(group = 1, color = 'darkblue', size = 1.2) +
+  geom_point(size = 2) +
   theme_minimal() +
   labs(title='Average daily number of bikers by month', y = 'Average Daily Bikers', x = 'Month') +
-  scale_x_discrete(limits = 1:12, labels = month.abb)
+  scale_x_discrete(labels = month.abb)
 ```
 
 ## Holiday and Temp/Hum data
@@ -203,10 +204,11 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 # Modeling
 
 ## Linear Regression
-Linear regression is one of the most common methods for modeling. It looks at a set of predictors and estimates what will happen to the response if the predictors change. This model is highly interpretable, as it shows us the effect of each individual predictor as well as interactions. We can see if the change in the response goes up or down and in what quantity. Below we fit two linear regression models, one with all predictor. 
+Linear regression is one of the most common methods for modeling. It looks at a set of predictors and estimates what will happen to the response if the predictors change. This model is highly interpretable, as it shows us the effect of each individual predictor as well as interactions. We can see if the change in the response goes up or down and in what quantity. Below we fit two linear regression models. 
 
-### Linear Fit 1
-```{r select subset of predictors}
+### Linear Fit 1  
+The first model will have a subset of predictors chosen by stepwise selection. 
+```{r select subset of predictors, include=FALSE}
 lm_fit_select <- lm(cnt ~ ., data = train[,2:12])
 summary(lm_fit_select)
 step(lm_fit_select)
@@ -249,6 +251,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
 boost_fit <-  train(cnt ~ ., 
                     data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
                     method = "gbm", 
+                    verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
                     tuneGrid = data.frame(boost_grid))
 ```
