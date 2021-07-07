@@ -115,7 +115,7 @@ bikes %>%
   knitr::kable()
 ```
 ## Types of weather by season
-1 represents 'Clear to some clouds', 2 represents 'Misty', and 3 represents 'Light snow or rain'.
+Now we will look at the number of days with each type of weather by season. 1 represents 'Clear to some clouds', 2 represents 'Misty', and 3 represents 'Light snow or rain'.
 
 ```{r}
 table(bikes$season, bikes$weathersit)
@@ -180,7 +180,7 @@ bikes %>% ggplot(aes(x = as.factor(workingday), y = registered)) + geom_boxplot(
                 theme_minimal()
 ```
 
-Temperature and humidity have an effect on the number of users on a given day
+Temperature and humidity have an effect on the number of users on a given day.
 
 First, normalized temperature data (both actual temperature and perceived):
 ```{r, temp_hum}
@@ -209,7 +209,7 @@ bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y
 
 ## Correlation among numeric predictors
 
-Here we are checking the correlation between the numeric predictors in the data
+Here we are checking the correlation between the numeric predictors in the data.
 
 ```{r correlation}
 knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
@@ -254,7 +254,7 @@ lm.fit1
 
 ```
 
-The RMSE value of the model changed to `r round(lm.fit1$results$RMSE,2)`
+The RMSE value of the model changed to `r round(lm.fit1$results$RMSE,2)`.
 
 
 ## Ensemble Tree
@@ -328,8 +328,9 @@ lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
 rf_pred <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-comp <- data.frame(lm_MSE, lm_MSE1, rf_pred, boost_MSE)
-knitr::kable(comp)
+comp <- data.frame('Linear Model 1' = lm_MSE, 'Linear Model 2' = lm_MSE1, 'Random Forest Model' = rf_pred, 'Boosting Model' = boost_MSE)
+
+knitr::kable(t(comp))
 ```
 
-Boosting achieves the lowest test MSE of `r round(boost_MSE)`. 
+`r names(which.min(comp))` achieves the lowest test MSE of `r min(comp)`. 

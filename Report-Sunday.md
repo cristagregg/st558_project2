@@ -6,7 +6,9 @@ Crista Gregg and Halid Kopanski
 -   [Introduction](#introduction)
 -   [Data](#data)
 -   [Summarizations](#summarizations)
+    -   [Summary statistics of users](#summary-statistics-of-users)
     -   [Rentals by Year](#rentals-by-year)
+    -   [Types of weather by season](#types-of-weather-by-season)
     -   [Rentals by Weather](#rentals-by-weather)
     -   [Casual vs. Registered bikers](#casual-vs-registered-bikers)
     -   [Average bikers by month](#average-bikers-by-month)
@@ -56,16 +58,21 @@ description of each:
 | *Sources*  | *Raw data and more information can be found [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)* |
 
 In addition to summary statistics, this report will also model bicycle
-users linear regression, random forests, and boosting. The model will
+users by linear regression, random forests, and boosting. The model will
 help determine anticipated number of users based on readily available
 data. To achieve this, the response variables are casual, registered,
-and cnt. The other 13 variables will be the predictors for models
-developed later in this report.
+and cnt. The other variables, not including the date and instant
+columns, will be the predictors for models developed later in this
+report.
 
 # Data
 
+Here, we set up the data for the selected day of week and convert
+categorical variables to factors, and then split the data into a train
+and test set.
+
 ``` r
-set.seed(1)
+set.seed(1) #get the same splits every time
 bikes <- read_csv('day.csv')
 
 day_function <- function(x){
@@ -116,6 +123,23 @@ test <- bikes[-train_rows,] %>%
 
 # Summarizations
 
+## Summary statistics of users
+
+Below shows the summary statistics of bike users: casual, registered,
+and total.
+
+``` r
+summary(bikes[,14:16])
+```
+
+    ##      casual       registered        cnt      
+    ##  Min.   :  54   Min.   : 451   Min.   : 605  
+    ##  1st Qu.: 618   1st Qu.:2211   1st Qu.:2918  
+    ##  Median :1353   Median :2874   Median :4334  
+    ##  Mean   :1338   Mean   :2891   Mean   :4229  
+    ##  3rd Qu.:2080   3rd Qu.:3694   3rd Qu.:5464  
+    ##  Max.   :3283   Max.   :5657   Max.   :8227
+
 ## Rentals by Year
 
 The following table tells us the total number of rentals for each of the
@@ -125,14 +149,31 @@ per day.
 ``` r
 bikes %>%
   group_by(yr) %>%
-  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt))) %>%
+  knitr::kable()
 ```
 
-    ## # A tibble: 2 x 3
-    ##   yr    total_rentals avg_rentals
-    ##   <fct>         <dbl>       <dbl>
-    ## 1 2019         177074        3405
-    ## 2 2020         266953        5037
+| yr   | total\_rentals | avg\_rentals |
+|:-----|---------------:|-------------:|
+| 2019 |         177074 |         3405 |
+| 2020 |         266953 |         5037 |
+
+## Types of weather by season
+
+Now we will look at the number of days with each type of weather by
+season. 1 represents ‘Clear to some clouds’, 2 represents ‘Misty’, and 3
+represents ‘Light snow or rain’.
+
+``` r
+table(bikes$season, bikes$weathersit)
+```
+
+    ##         
+    ##           1  2  3
+    ##   Fall   20  6  0
+    ##   Spring 21  6  0
+    ##   Summer 15 10  1
+    ##   Winter 18  8  0
 
 ## Rentals by Weather
 
@@ -150,7 +191,7 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ## Casual vs. Registered bikers
 
@@ -169,7 +210,7 @@ ggplot(bikes, aes(casual, registered)) +
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ## Average bikers by month
 
@@ -190,11 +231,11 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
   scale_x_discrete(labels = month.abb)
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ## Holiday and Temp/Hum data
 
-We would like to see what affect public holidays have on the types of
+We would like to see what effect public holidays have on the types of
 bicycle users for a given day. In this case, Sunday show the following
 relationships:
 
@@ -220,8 +261,8 @@ bikes %>% ggplot(aes(x = as.factor(workingday), y = registered)) + geom_boxplot(
 
 ![](Report-Sunday_files/figure-gfm/holiday-2.png)<!-- -->
 
-Temperature and Humidity have an affect on the number of users on a
-given day
+Temperature and humidity have an effect on the number of users on a
+given day.
 
 First, normalized temperature data (both actual temperature and
 perceived):
@@ -257,7 +298,7 @@ bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y
 ## Correlation among numeric predictors
 
 Here we are checking the correlation between the numeric predictors in
-the data
+the data.
 
 ``` r
 knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
@@ -280,19 +321,28 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 
 # Modeling
 
+Now, we will fit two linear regression model, a random forest model, and
+a boosting model. We will use cross-validation to select the best tuning
+parameters for the ensemble based methods, and then compare all four
+models using the test MSE.
+
 ## Linear Regression
 
 Linear regression is one of the most common methods for modeling. It
 looks at a set of predictors and estimates what will happen to the
-response if the predictors change. This model is highly interpretable,
-as it shows us the effect of each individual predictor as well as
-interactions. We can see if the change in the response goes up or down
-and in what quantity. Below we fit two linear regression models.
+response if one of the predictors or a combination of predictors change.
+This model is highly interpretable, as it shows us the effect of each
+individual predictor as well as interactions. We can see if the change
+in the response goes up or down and in what quantity. The model is
+chosen by minimizing the squares of the distances between the estimated
+value and the actual value in the testing set. Below we fit two
+different linear regression models.
 
 ### Linear Fit 1
 
 The first model will have a subset of predictors chosen by stepwise
-selection.
+selection. Once we have chosen an interesting set of predictors, we will
+use cross-validation to determine the RMSE and R<sup>2</sup>.
 
 ``` r
 set.seed(10)
@@ -317,7 +367,7 @@ lm.fit
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-Our first linear model has an R<sup>2</sup> of 1026.1885563.
+Our first linear model has an RMSE of 1026.19.
 
 ### Linear Fit 2
 
@@ -346,30 +396,72 @@ lm.fit1
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The R<sup>2</sup> value of the model changed to 1026.6357035
+The RMSE value of the model changed to 1026.64.
 
 ## Ensemble Tree
 
 Ensemble trees methods come in many types and are very versatile when it
-comes to regression or classification. For the following we will be
-using the two most common and well known methods, Random Forests (a form
+comes to regression or classification. For the following, we will be
+using the two most common and well known methods: Random Forests (a form
 of bagging) and Boosting. Both these tree based methods involve
 optimization during the development process. In the case of random
 forests, the optimization involves varying the number of predictors
 used. This is done to mitigate the effects of one or more predictors
-from overshadowing other predictors. Boosting is method where the final
-model is developed through an iterative combination of weaker models
-where each interation builds upon the last. While both methods are very
-flexible and tend to process good results the models themselves are as
-interpretable as linear regression. We normally just analyze the output
-of the models.
+from overshadowing other predictors. Boosting is a method where the
+final model is developed through an iterative combination of weaker
+models where each iteration builds upon the last. While both methods are
+very flexible and tend to process good results, the models themselves
+are not as interpretable as linear regression. We normally just analyze
+the output of the models.
 
 ### Random Forests
+
+Below is the result of training with the random forest method. This
+method uses a different subset of predictors for each tree and averages
+the results across many trees, selected by bootstrapping. By reducing
+the number of predictors considered in each tree, we may be able to
+reduce the correlation between trees to improve our results. In the
+training model below, we vary the number of predictors used in each
+tree.
+
+``` r
+rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
+                preProcess = c('center', 'scale'),
+                tuneGrid = data.frame(mtry = 1:10))
+rf_fit
+```
+
+    ## Random Forest 
+    ## 
+    ## 73 samples
+    ## 10 predictors
+    ## 
+    ## Pre-processing: centered (23), scaled (23) 
+    ## Resampling: Bootstrapped (25 reps) 
+    ## Summary of sample sizes: 73, 73, 73, 73, 73, 73, ... 
+    ## Resampling results across tuning parameters:
+    ## 
+    ##   mtry  RMSE       Rsquared   MAE      
+    ##    1    1503.8622  0.6196766  1230.9688
+    ##    2    1222.4006  0.6723380   998.8947
+    ##    3    1123.6962  0.6997624   907.8914
+    ##    4    1074.1155  0.7190466   859.6767
+    ##    5    1050.3281  0.7273632   835.3506
+    ##    6    1030.8000  0.7356933   818.0587
+    ##    7    1014.1238  0.7399714   800.9845
+    ##    8    1008.4858  0.7412673   793.1774
+    ##    9     998.4443  0.7449565   781.9634
+    ##   10     997.8396  0.7441974   781.4082
+    ## 
+    ## RMSE was used to select the optimal model using the smallest value.
+    ## The final value used for the model was mtry = 10.
+
+The best model uses 10 predictors. This gives an RMSE of 997.84.
 
 ### Boosting Model
 
 The following are the results of Boosting model development using the
-provided bike data
+provided bike data.
 
 ``` r
 trctrl <- trainControl(method = "repeatedcv", 
@@ -439,7 +531,8 @@ print(boost_fit)
     ## 
     ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final values used for the model were n.trees = 100, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.
+    ## The final values used for the model were n.trees = 100, interaction.depth = 5, shrinkage
+    ##  = 0.1 and n.minobsinnode = 10.
 
 ``` r
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
@@ -450,27 +543,36 @@ The attributes of the best model is shown here.
 ``` r
 boost_min <- which.min(results_tab$RMSE)
 
-knitr::kable(results_tab[boost_min,])
+knitr::kable(results_tab[boost_min,], digits = 2)
 ```
 
-| shrinkage | interaction.depth | n.trees |     RMSE |  Rsquared |
-|----------:|------------------:|--------:|---------:|----------:|
-|       0.1 |                 5 |     100 | 946.0414 | 0.7609759 |
+| shrinkage | interaction.depth | n.trees |   RMSE | Rsquared |
+|----------:|------------------:|--------:|-------:|---------:|
+|       0.1 |                 5 |     100 | 946.04 |     0.76 |
 
 # Comparison
 
 ``` r
 lm_pred <- predict(lm.fit, newdata = test)
 lm_pred1 <- predict(lm.fit1, newdata = test)
+rf_pred <- predict(rf_fit, newdata = test)
 boost_pred <- predict(boost_fit, newdata = test)
 
 lm_MSE <- mean((lm_pred - test$cnt)^2)
 lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+rf_pred <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-print(c(lm_MSE, lm_MSE1, boost_MSE))
+comp <- data.frame('Linear Model 1' = lm_MSE, 'Linear Model 2' = lm_MSE1, 'Random Forest Model' = rf_pred, 'Boosting Model' = boost_MSE)
+
+knitr::kable(t(comp))
 ```
 
-    ## [1]  803770.6 1543280.4  473081.3
+|                     |           |
+|:--------------------|----------:|
+| Linear.Model.1      |  803770.6 |
+| Linear.Model.2      | 1543280.4 |
+| Random.Forest.Model |  803049.8 |
+| Boosting.Model      |  473081.3 |
 
-\`\`\`
+Boosting.Model achieves the lowest test MSE of 4.7308134^{5}.
