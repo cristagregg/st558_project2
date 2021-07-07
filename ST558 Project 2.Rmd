@@ -25,11 +25,11 @@ The following analysis breaks down bicycle sharing usage based on data gathered 
 |dteday |date
 |season |season (winter, spring, summer, fall)
 |yr | year (2011, 2012)
-|mnth |month of the year
-|holiday | whether day is holiday or not (extracted from [Web Link])
+|mnth | month of the year
+|holiday | whether that day is holiday (1) or not (0)
 |weekday | day of the week
-|workingday | if day is neither weekend nor holiday is 1, otherwise is 0.
-|weathersit |
+|workingday | if day is neither a weekend nor a holiday value is 1, otherwise is 0.
+|weathersit | Description of weather conditions (see below)
 |-| 1: Clear, Few clouds, Partly cloudy, Partly cloudy
 |-| 2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
 |-| 3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
@@ -52,22 +52,22 @@ set.seed(1) #get the same splits every time
 bikes <- read_csv('day.csv')
 
 day_function <- function(x){
-  x <- as.character(x)
-  switch(x, "0" = "Sunday", 
-         "1" = "Monday", 
-         "2" = "Tuesday", 
-         "3" = "Wednesday", 
-         "4" = "Thursday", 
-         "5" = "Friday", 
-         "6" = "Saturday")
+  x <- x + 1
+  switch(x,"Sunday", 
+           "Monday", 
+           "Tuesday", 
+           "Wednesday", 
+           "Thursday", 
+           "Friday", 
+           "Saturday")
 }
 
 season_function <- function(x){
-    x <- as.character(x)
-    switch(x, "1" = "Spring",
-              "2" = "Summer",
-              "3" = "Fall",
-              "4" = "Winter")
+    #x <- as.character(x)
+    switch(x, "Spring",
+              "Summer",
+              "Fall",
+              "Winter")
 }
 
 bikes <- bikes %>% select(everything()) %>% 
@@ -77,7 +77,7 @@ bikes <- bikes %>% select(everything()) %>%
 
 bikes$season <- as.factor(bikes$season)
 bikes$yr <- as.factor(bikes$yr)
-levels(bikes$yr) <- c('2019','2020')
+levels(bikes$yr) <- c('2011','2012')
 bikes$mnth <- as.factor(bikes$mnth)
 bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
@@ -102,7 +102,7 @@ test <- bikes[-train_rows,] %>%
 Below shows the summary statistics of bike users: casual, registered, and total.  
 
 ```{r}
-summary(bikes[,14:16])
+knitr::kable(summary(bikes[,14:16]))
 ```
 
 ## Rentals by Year
@@ -118,20 +118,33 @@ bikes %>%
 Now we will look at the number of days with each type of weather by season. 1 represents 'Clear to some clouds', 2 represents 'Misty', and 3 represents 'Light snow or rain'.
 
 ```{r}
-table(bikes$season, bikes$weathersit)
+knitr::kable(table(bikes$season, bikes$weathersit))
 ```
 
 
 ## Rentals by Weather  
 
 The following box plot shows us how many rentals we have for days that are sunny or partly cloudy, misty, or rainy/snowy. We may expect some differences in behavior between weekend days where less people might be inclined to ride their bikes for pleasure, versus weekdays when more people might brave moderately unpleasant weather to get to work. 
-```{r}
+
+```{r, message=FALSE}
 ggplot(bikes, aes(factor(weathersit), cnt)) +
   geom_boxplot() +
   labs(x = 'Type of Weather', y = 'Number of Rental Bikes', title = 'Rental Bikes by Type of Weather') +
   scale_x_discrete(labels = c('Clear to some clouds', 'Misty', 'Light snow or rain')) +
   theme_minimal()
+
+weather_summary <- 
+  bikes %>%
+  group_by(weathersit) %>%
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+
+weather_min <- switch(which.min(weather_summary$avg_rentals),
+                               "clear weather",
+															 "misty weather",
+															 "weather with light snow or rain")
 ```
+
+According to the above box plot, it can be seen that `r weather_min` brings out the least amount of total users.
 
 ## Casual vs. Registered bikers  
 
@@ -139,7 +152,7 @@ Below is a chart of the relationship between casual and registered bikers. We mi
 ```{r}
 ggplot(bikes, aes(casual, registered)) +
   geom_point() +
-  geom_smooth(method = 'lm') +
+  geom_smooth(formula = 'y ~ x', method = 'lm') +
   theme_minimal() +
   labs(title = 'Registered versus Casual Renters')
 ```
@@ -158,11 +171,35 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
   theme_minimal() +
   labs(title='Average daily number of bikers by month', y = 'Average Daily Bikers', x = 'Month') +
   scale_x_discrete(labels = month.abb)
+
+month_max <- month.name[which.max(plot_mth$avg_bikers)]
+month_min <- month.name[which.min(plot_mth$avg_bikers)]
+
+user_max <- max(plot_mth$avg_bikers)
+user_min <- min(plot_mth$avg_bikers)
+
+changes <- rep(0, 11)
+diff_mth <- rep("x", 11)
+
+for (i in 2:12){
+  diff_mth[i - 1] <- paste(month.name[i - 1], "to", month.name[i])
+  changes[i - 1] <- round(plot_mth$avg_bikers[i] - plot_mth$avg_bikers[i - 1])
+}
+
+
+diff_tab_mth <- as_tibble(cbind(diff_mth, changes))
+
 ```
 
-## Holiday and Temp/Hum data
+According to the graph, `r month_max` has the highest number of users with a value of `r round(user_max)`. The month with the lowest number of users is `r month_min` with an average of `r round(user_min)`.
 
-We would like to see what effect public holidays have on the types of bicycle users for a given day. In this case, `r params$day_of_week` show the following relationships:
+The largest decrease in month to month users was `r diff_tab_mth[which.min(diff_tab_mth$changes),1]` with an average change of `r diff_tab_mth[which.min(diff_tab_mth$changes),2]`.
+
+The largest increase in month to month users was `r diff_tab_mth[which.max(diff_tab_mth$changes),1]` with an average change of `r diff_tab_mth[which.max(diff_tab_mth$changes),2]`.
+
+## Holiday and Temperature / Humidity data
+
+We would like to see what effect public holidays have on the types of bicycle users on average for a given day. In this case, `r day` data shows the following relationships:
 
 ```{r holiday}
 bikes %>% ggplot(aes(x = as.factor(workingday), y = casual)) + geom_boxplot() + 
@@ -197,7 +234,7 @@ ggplot(bike_temp, aes(x = temp_norm, y = cnt, col = type, shape = type)) +
         theme_minimal()
 ```
 
-Next the affect of humidity:
+Next the effect of humidity:
 
 ```{r hum}
 bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
@@ -264,7 +301,7 @@ Ensemble trees methods come in many types and are very versatile when it comes t
 ### Random Forests 
 Below is the result of training with the random forest method. This method uses a different subset of predictors for each tree and averages the results across many trees, selected by bootstrapping. By reducing the number of predictors considered in each tree, we may be able to reduce the correlation between trees to improve our results. In the training model below, we vary the number of predictors used in each tree. 
 
-```{r ensemble, warning=FALSE}
+```{r ensemble, warning=FALSE, message=FALSE}
 rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
                 preProcess = c('center', 'scale'),
                 tuneGrid = data.frame(mtry = 1:10))
@@ -316,6 +353,8 @@ knitr::kable(results_tab[boost_min,], digits = 2)
 
 # Comparison
 
+Here we compare the 4 models developed earlier. Each model was applied to a test set and the results were then used to calculate MSE.  Below are the results. 
+
 ```{r comparison, message = FALSE, warning = FALSE}
 
 lm_pred <- predict(lm.fit, newdata = test)
@@ -323,14 +362,33 @@ lm_pred1 <- predict(lm.fit1, newdata = test)
 rf_pred <- predict(rf_fit, newdata = test)
 boost_pred <- predict(boost_fit, newdata = test)
 
+prediction_values <- as_tibble(cbind(lm_pred, lm_pred1, rf_pred, boost_pred))
+
 lm_MSE <- mean((lm_pred - test$cnt)^2)
 lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
-rf_pred <- mean((rf_pred - test$cnt)^2)
+rf_MSE <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-comp <- data.frame('Linear Model 1' = lm_MSE, 'Linear Model 2' = lm_MSE1, 'Random Forest Model' = rf_pred, 'Boosting Model' = boost_MSE)
+comp <- data.frame('Linear Model 1' = lm_MSE, 
+                   'Linear Model 2' = lm_MSE1, 
+                   'Random Forest Model' = rf_MSE, 
+                   'Boosting Model' = boost_MSE)
 
-knitr::kable(t(comp))
+knitr::kable(t(comp), col.names = "MSE")
 ```
 
-`r names(which.min(comp))` achieves the lowest test MSE of `r min(comp)`. 
+It was found that `r names(which.min(comp))` achieves the lowest test MSE of `r min(comp)` for `r day` data. 
+
+Below is a graph of the Actual vs Predicted results:
+
+```{r actual_pred}
+
+index_val <- (which.min(t(comp)))
+
+results_plot <- as_tibble(cbind("preds" = prediction_values[[index_val]], "actual" = test$cnt))
+
+ggplot(data = results_plot, aes(preds, actual)) + geom_point() +
+     labs(x = paste(names(which.min(comp)), "Predictions"), y = "Actual Values",
+     title = paste(names(which.min(comp)), "Actual vs Predicted Values")) +
+     geom_abline(slope = 1, intercept = 0, col = 'red')
+```

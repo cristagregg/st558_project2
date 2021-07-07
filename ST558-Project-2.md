@@ -6,11 +6,14 @@ Crista Gregg and Halid Kopanski
 -   [Introduction](#introduction)
 -   [Data](#data)
 -   [Summarizations](#summarizations)
+    -   [Summary statistics of users](#summary-statistics-of-users)
     -   [Rentals by Year](#rentals-by-year)
+    -   [Types of weather by season](#types-of-weather-by-season)
     -   [Rentals by Weather](#rentals-by-weather)
     -   [Casual vs. Registered bikers](#casual-vs-registered-bikers)
     -   [Average bikers by month](#average-bikers-by-month)
-    -   [Holiday and Temp/Hum data](#holiday-and-temphum-data)
+    -   [Holiday and Temperature / Humidity
+        data](#holiday-and-temperature--humidity-data)
     -   [Correlation among numeric
         predictors](#correlation-among-numeric-predictors)
 -   [Modeling](#modeling)
@@ -38,10 +41,10 @@ description of each:
 | season     |                                       season (winter, spring, summer, fall)                                       |
 | yr         |                                                 year (2011, 2012)                                                 |
 | mnth       |                                                 month of the year                                                 |
-| holiday    |                            whether day is holiday or not (extracted from \[Web Link\])                            |
+| holiday    |                                    whether that day is holiday (1) or not (0)                                     |
 | weekday    |                                                  day of the week                                                  |
-| workingday |                            if day is neither weekend nor holiday is 1, otherwise is 0.                            |
-| weathersit |                                                                                                                   |
+| workingday |                       if day is neither a weekend nor a holiday value is 1, otherwise is 0.                       |
+| weathersit |                                   Description of weather conditions (see below)                                   |
 | \-         |                                1: Clear, Few clouds, Partly cloudy, Partly cloudy                                 |
 | \-         |                          2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist                          |
 | \-         |            3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds             |
@@ -56,35 +59,40 @@ description of each:
 | *Sources*  | *Raw data and more information can be found [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)* |
 
 In addition to summary statistics, this report will also model bicycle
-users linear regression, random forests, and boosting. The model will
+users by linear regression, random forests, and boosting. The model will
 help determine anticipated number of users based on readily available
 data. To achieve this, the response variables are casual, registered,
-and cnt. The other 13 variables will be the predictors for models
-developed later in this report.
+and cnt. The other variables, not including the date and instant
+columns, will be the predictors for models developed later in this
+report.
 
 # Data
 
+Here, we set up the data for the selected day of week and convert
+categorical variables to factors, and then split the data into a train
+and test set.
+
 ``` r
-set.seed(1)
+set.seed(1) #get the same splits every time
 bikes <- read_csv('day.csv')
 
 day_function <- function(x){
-  x <- as.character(x)
-  switch(x, "0" = "Sunday", 
-         "1" = "Monday", 
-         "2" = "Tuesday", 
-         "3" = "Wednesday", 
-         "4" = "Thursday", 
-         "5" = "Friday", 
-         "6" = "Saturday")
+  x <- x + 1
+  switch(x,"Sunday", 
+           "Monday", 
+           "Tuesday", 
+           "Wednesday", 
+           "Thursday", 
+           "Friday", 
+           "Saturday")
 }
 
 season_function <- function(x){
-    x <- as.character(x)
-    switch(x, "1" = "Spring",
-              "2" = "Summer",
-              "3" = "Fall",
-              "4" = "Winter")
+    #x <- as.character(x)
+    switch(x, "Spring",
+              "Summer",
+              "Fall",
+              "Winter")
 }
 
 bikes <- bikes %>% select(everything()) %>% 
@@ -94,7 +102,7 @@ bikes <- bikes %>% select(everything()) %>%
 
 bikes$season <- as.factor(bikes$season)
 bikes$yr <- as.factor(bikes$yr)
-levels(bikes$yr) <- c('2019','2020')
+levels(bikes$yr) <- c('2011','2012')
 bikes$mnth <- as.factor(bikes$mnth)
 bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
@@ -116,6 +124,24 @@ test <- bikes[-train_rows,] %>%
 
 # Summarizations
 
+## Summary statistics of users
+
+Below shows the summary statistics of bike users: casual, registered,
+and total.
+
+``` r
+knitr::kable(summary(bikes[,14:16]))
+```
+
+|     | casual         | registered   | cnt          |
+|:----|:---------------|:-------------|:-------------|
+|     | Min. : 2.0     | Min. : 20    | Min. : 22    |
+|     | 1st Qu.: 253.0 | 1st Qu.:2549 | 1st Qu.:3310 |
+|     | Median : 690.0 | Median :3603 | Median :4359 |
+|     | Mean : 674.1   | Mean :3664   | Mean :4338   |
+|     | 3rd Qu.: 904.0 | 3rd Qu.:4841 | 3rd Qu.:5875 |
+|     | Max. :3065.0   | Max. :6435   | Max. :7525   |
+
 ## Rentals by Year
 
 The following table tells us the total number of rentals for each of the
@@ -125,14 +151,31 @@ per day.
 ``` r
 bikes %>%
   group_by(yr) %>%
-  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt))) %>%
+  knitr::kable()
 ```
 
-    ## # A tibble: 2 x 3
-    ##   yr    total_rentals avg_rentals
-    ##   <fct>         <dbl>       <dbl>
-    ## 1 2019         180221        3466
-    ## 2 2020         275282        5194
+| yr   | total\_rentals | avg\_rentals |
+|:-----|---------------:|-------------:|
+| 2011 |         180221 |         3466 |
+| 2012 |         275282 |         5194 |
+
+## Types of weather by season
+
+Now we will look at the number of days with each type of weather by
+season. 1 represents ‘Clear to some clouds’, 2 represents ‘Misty’, and 3
+represents ‘Light snow or rain’.
+
+``` r
+knitr::kable(table(bikes$season, bikes$weathersit))
+```
+
+|        |   1 |   2 |   3 |
+|:-------|----:|----:|----:|
+| Fall   |  18 |   8 |   0 |
+| Spring |  18 |   8 |   0 |
+| Summer |  15 |  12 |   0 |
+| Winter |  15 |   9 |   2 |
 
 ## Rentals by Weather
 
@@ -150,7 +193,22 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
-![](ST558-Project-2_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](ST558-Project-2_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+``` r
+weather_summary <- 
+  bikes %>%
+  group_by(weathersit) %>%
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+
+weather_min <- switch(which.min(weather_summary$avg_rentals),
+                               "clear weather",
+                                                             "misty weather",
+                                                             "weather with light snow or rain")
+```
+
+According to the above box plot, it can be seen that weather with light
+snow or rain brings out the least amount of total users.
 
 ## Casual vs. Registered bikers
 
@@ -162,14 +220,12 @@ weekday but more casual users on the weekend.
 ``` r
 ggplot(bikes, aes(casual, registered)) +
   geom_point() +
-  geom_smooth(method = 'lm') +
+  geom_smooth(formula = 'y ~ x', method = 'lm') +
   theme_minimal() +
   labs(title = 'Registered versus Casual Renters')
 ```
 
-    ## `geom_smooth()` using formula 'y ~ x'
-
-![](ST558-Project-2_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](ST558-Project-2_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ## Average bikers by month
 
@@ -190,13 +246,42 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
   scale_x_discrete(labels = month.abb)
 ```
 
-![](ST558-Project-2_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](ST558-Project-2_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-## Holiday and Temp/Hum data
+``` r
+month_max <- month.name[which.max(plot_mth$avg_bikers)]
+month_min <- month.name[which.min(plot_mth$avg_bikers)]
 
-We would like to see what affect public holidays have on the types of
-bicycle users for a given day. In this case, Monday show the following
-relationships:
+user_max <- max(plot_mth$avg_bikers)
+user_min <- min(plot_mth$avg_bikers)
+
+changes <- rep(0, 11)
+diff_mth <- rep("x", 11)
+
+for (i in 2:12){
+  diff_mth[i - 1] <- paste(month.name[i - 1], "to", month.name[i])
+  changes[i - 1] <- round(plot_mth$avg_bikers[i] - plot_mth$avg_bikers[i - 1])
+}
+
+
+diff_tab_mth <- as_tibble(cbind(diff_mth, changes))
+```
+
+According to the graph, July has the highest number of users with a
+value of 5792. The month with the lowest number of users is January with
+an average of 1927.
+
+The largest decrease in month to month users was November to December
+with an average change of -1161.
+
+The largest increase in month to month users was March to April with an
+average change of 970.
+
+## Holiday and Temperature / Humidity data
+
+We would like to see what effect public holidays have on the types of
+bicycle users on average for a given day. In this case, Monday data
+shows the following relationships:
 
 ``` r
 bikes %>% ggplot(aes(x = as.factor(workingday), y = casual)) + geom_boxplot() + 
@@ -220,8 +305,8 @@ bikes %>% ggplot(aes(x = as.factor(workingday), y = registered)) + geom_boxplot(
 
 ![](ST558-Project-2_files/figure-gfm/holiday-2.png)<!-- -->
 
-Temperature and Humidity have an affect on the number of users on a
-given day
+Temperature and humidity have an effect on the number of users on a
+given day.
 
 First, normalized temperature data (both actual temperature and
 perceived):
@@ -242,7 +327,7 @@ ggplot(bike_temp, aes(x = temp_norm, y = cnt, col = type, shape = type)) +
 
 ![](ST558-Project-2_files/figure-gfm/temp_hum-1.png)<!-- -->
 
-Next the affect of humidity:
+Next the effect of humidity:
 
 ``` r
 bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
@@ -257,7 +342,7 @@ bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y
 ## Correlation among numeric predictors
 
 Here we are checking the correlation between the numeric predictors in
-the data
+the data.
 
 ``` r
 knitr::kable(round(cor(bikes[ , c(11:16)]), 3))
@@ -280,19 +365,28 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 
 # Modeling
 
+Now, we will fit two linear regression model, a random forest model, and
+a boosting model. We will use cross-validation to select the best tuning
+parameters for the ensemble based methods, and then compare all four
+models using the test MSE.
+
 ## Linear Regression
 
 Linear regression is one of the most common methods for modeling. It
 looks at a set of predictors and estimates what will happen to the
-response if the predictors change. This model is highly interpretable,
-as it shows us the effect of each individual predictor as well as
-interactions. We can see if the change in the response goes up or down
-and in what quantity. Below we fit two linear regression models.
+response if one of the predictors or a combination of predictors change.
+This model is highly interpretable, as it shows us the effect of each
+individual predictor as well as interactions. We can see if the change
+in the response goes up or down and in what quantity. The model is
+chosen by minimizing the squares of the distances between the estimated
+value and the actual value in the testing set. Below we fit two
+different linear regression models.
 
 ### Linear Fit 1
 
 The first model will have a subset of predictors chosen by stepwise
-selection.
+selection. Once we have chosen an interesting set of predictors, we will
+use cross-validation to determine the RMSE and R<sup>2</sup>.
 
 ``` r
 set.seed(10)
@@ -317,7 +411,7 @@ lm.fit
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-Our first linear model has an R<sup>2</sup> of 795.3769648.
+Our first linear model has an RMSE of 795.38.
 
 ### Linear Fit 2
 
@@ -346,30 +440,72 @@ lm.fit1
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The R<sup>2</sup> value of the model changed to 751.5872519
+The RMSE value of the model changed to 751.59.
 
 ## Ensemble Tree
 
 Ensemble trees methods come in many types and are very versatile when it
-comes to regression or classification. For the following we will be
-using the two most common and well known methods, Random Forests (a form
+comes to regression or classification. For the following, we will be
+using the two most common and well known methods: Random Forests (a form
 of bagging) and Boosting. Both these tree based methods involve
 optimization during the development process. In the case of random
 forests, the optimization involves varying the number of predictors
 used. This is done to mitigate the effects of one or more predictors
-from overshadowing other predictors. Boosting is method where the final
-model is developed through an iterative combination of weaker models
-where each interation builds upon the last. While both methods are very
-flexible and tend to process good results the models themselves are as
-interpretable as linear regression. We normally just analyze the output
-of the models.
+from overshadowing other predictors. Boosting is a method where the
+final model is developed through an iterative combination of weaker
+models where each iteration builds upon the last. While both methods are
+very flexible and tend to process good results, the models themselves
+are not as interpretable as linear regression. We normally just analyze
+the output of the models.
 
 ### Random Forests
+
+Below is the result of training with the random forest method. This
+method uses a different subset of predictors for each tree and averages
+the results across many trees, selected by bootstrapping. By reducing
+the number of predictors considered in each tree, we may be able to
+reduce the correlation between trees to improve our results. In the
+training model below, we vary the number of predictors used in each
+tree.
+
+``` r
+rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
+                preProcess = c('center', 'scale'),
+                tuneGrid = data.frame(mtry = 1:10))
+rf_fit
+```
+
+    ## Random Forest 
+    ## 
+    ## 73 samples
+    ## 10 predictors
+    ## 
+    ## Pre-processing: centered (23), scaled (23) 
+    ## Resampling: Bootstrapped (25 reps) 
+    ## Summary of sample sizes: 73, 73, 73, 73, 73, 73, ... 
+    ## Resampling results across tuning parameters:
+    ## 
+    ##   mtry  RMSE       Rsquared   MAE      
+    ##    1    1411.1480  0.5677018  1174.7260
+    ##    2    1186.9712  0.6377193   986.3843
+    ##    3    1094.4024  0.6753772   879.8229
+    ##    4    1046.2410  0.6982560   821.1445
+    ##    5    1011.3763  0.7123635   777.2291
+    ##    6     994.8440  0.7167495   748.5663
+    ##    7     980.1268  0.7242386   728.5467
+    ##    8     969.6457  0.7266090   710.0647
+    ##    9     967.1118  0.7252636   698.3667
+    ##   10     959.1956  0.7273668   687.2306
+    ## 
+    ## RMSE was used to select the optimal model using the smallest value.
+    ## The final value used for the model was mtry = 10.
+
+The best model uses 10 predictors. This gives an RMSE of 959.2.
 
 ### Boosting Model
 
 The following are the results of Boosting model development using the
-provided bike data
+provided bike data.
 
 ``` r
 trctrl <- trainControl(method = "repeatedcv", 
@@ -451,27 +587,61 @@ The attributes of the best model is shown here.
 ``` r
 boost_min <- which.min(results_tab$RMSE)
 
-knitr::kable(results_tab[boost_min,])
+knitr::kable(results_tab[boost_min,], digits = 2)
 ```
 
-| shrinkage | interaction.depth | n.trees |     RMSE |  Rsquared |
-|----------:|------------------:|--------:|---------:|----------:|
-|       0.1 |                 5 |     500 | 884.9143 | 0.7918749 |
+| shrinkage | interaction.depth | n.trees |   RMSE | Rsquared |
+|----------:|------------------:|--------:|-------:|---------:|
+|       0.1 |                 5 |     500 | 884.91 |     0.79 |
 
 # Comparison
+
+Here we compare the 4 models developed earlier. Each model was applied
+to a test set and the results were then used to calculate MSE. Below are
+the results.
 
 ``` r
 lm_pred <- predict(lm.fit, newdata = test)
 lm_pred1 <- predict(lm.fit1, newdata = test)
+rf_pred <- predict(rf_fit, newdata = test)
 boost_pred <- predict(boost_fit, newdata = test)
+
+prediction_values <- as_tibble(cbind(lm_pred, lm_pred1, rf_pred, boost_pred))
 
 lm_MSE <- mean((lm_pred - test$cnt)^2)
 lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+rf_MSE <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-print(c(lm_MSE, lm_MSE1, boost_MSE))
+comp <- data.frame('Linear Model 1' = lm_MSE, 
+                   'Linear Model 2' = lm_MSE1, 
+                   'Random Forest Model' = rf_MSE, 
+                   'Boosting Model' = boost_MSE)
+
+knitr::kable(t(comp), col.names = "MSE")
 ```
 
-    ## [1] 991231.5 953968.2 509294.0
+|                     |      MSE |
+|:--------------------|---------:|
+| Linear.Model.1      | 991231.5 |
+| Linear.Model.2      | 953968.2 |
+| Random.Forest.Model | 828946.9 |
+| Boosting.Model      | 509294.0 |
 
-\`\`\`
+It was found that Boosting.Model achieves the lowest test MSE of
+5.0929405^{5} for Monday data.
+
+Below is a graph of the Actual vs Predicted results:
+
+``` r
+index_val <- (which.min(t(comp)))
+
+results_plot <- as_tibble(cbind("preds" = prediction_values[[index_val]], "actual" = test$cnt))
+
+ggplot(data = results_plot, aes(preds, actual)) + geom_point() +
+     labs(x = paste(names(which.min(comp)), "Predictions"), y = "Actual Values",
+     title = paste(names(which.min(comp)), "Actual vs Predicted Values")) +
+     geom_abline(slope = 1, intercept = 0, col = 'red')
+```
+
+![](ST558-Project-2_files/figure-gfm/actual_pred-1.png)<!-- -->

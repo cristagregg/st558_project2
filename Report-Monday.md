@@ -12,7 +12,8 @@ Crista Gregg and Halid Kopanski
     -   [Rentals by Weather](#rentals-by-weather)
     -   [Casual vs. Registered bikers](#casual-vs-registered-bikers)
     -   [Average bikers by month](#average-bikers-by-month)
-    -   [Holiday and Temp/Hum data](#holiday-and-temphum-data)
+    -   [Holiday and Temperature / Humidity
+        data](#holiday-and-temperature--humidity-data)
     -   [Correlation among numeric
         predictors](#correlation-among-numeric-predictors)
 -   [Modeling](#modeling)
@@ -40,10 +41,10 @@ description of each:
 | season     |                                       season (winter, spring, summer, fall)                                       |
 | yr         |                                                 year (2011, 2012)                                                 |
 | mnth       |                                                 month of the year                                                 |
-| holiday    |                            whether day is holiday or not (extracted from \[Web Link\])                            |
+| holiday    |                                    whether that day is holiday (1) or not (0)                                     |
 | weekday    |                                                  day of the week                                                  |
-| workingday |                            if day is neither weekend nor holiday is 1, otherwise is 0.                            |
-| weathersit |                                                                                                                   |
+| workingday |                       if day is neither a weekend nor a holiday value is 1, otherwise is 0.                       |
+| weathersit |                                   Description of weather conditions (see below)                                   |
 | \-         |                                1: Clear, Few clouds, Partly cloudy, Partly cloudy                                 |
 | \-         |                          2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist                          |
 | \-         |            3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds             |
@@ -76,22 +77,22 @@ set.seed(1) #get the same splits every time
 bikes <- read_csv('day.csv')
 
 day_function <- function(x){
-  x <- as.character(x)
-  switch(x, "0" = "Sunday", 
-         "1" = "Monday", 
-         "2" = "Tuesday", 
-         "3" = "Wednesday", 
-         "4" = "Thursday", 
-         "5" = "Friday", 
-         "6" = "Saturday")
+  x <- x + 1
+  switch(x,"Sunday", 
+           "Monday", 
+           "Tuesday", 
+           "Wednesday", 
+           "Thursday", 
+           "Friday", 
+           "Saturday")
 }
 
 season_function <- function(x){
-    x <- as.character(x)
-    switch(x, "1" = "Spring",
-              "2" = "Summer",
-              "3" = "Fall",
-              "4" = "Winter")
+    #x <- as.character(x)
+    switch(x, "Spring",
+              "Summer",
+              "Fall",
+              "Winter")
 }
 
 bikes <- bikes %>% select(everything()) %>% 
@@ -101,7 +102,7 @@ bikes <- bikes %>% select(everything()) %>%
 
 bikes$season <- as.factor(bikes$season)
 bikes$yr <- as.factor(bikes$yr)
-levels(bikes$yr) <- c('2019','2020')
+levels(bikes$yr) <- c('2011','2012')
 bikes$mnth <- as.factor(bikes$mnth)
 bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
@@ -129,16 +130,17 @@ Below shows the summary statistics of bike users: casual, registered,
 and total.
 
 ``` r
-summary(bikes[,14:16])
+knitr::kable(summary(bikes[,14:16]))
 ```
 
-    ##      casual         registered        cnt      
-    ##  Min.   :   2.0   Min.   :  20   Min.   :  22  
-    ##  1st Qu.: 253.0   1st Qu.:2549   1st Qu.:3310  
-    ##  Median : 690.0   Median :3603   Median :4359  
-    ##  Mean   : 674.1   Mean   :3664   Mean   :4338  
-    ##  3rd Qu.: 904.0   3rd Qu.:4841   3rd Qu.:5875  
-    ##  Max.   :3065.0   Max.   :6435   Max.   :7525
+|     | casual         | registered   | cnt          |
+|:----|:---------------|:-------------|:-------------|
+|     | Min. : 2.0     | Min. : 20    | Min. : 22    |
+|     | 1st Qu.: 253.0 | 1st Qu.:2549 | 1st Qu.:3310 |
+|     | Median : 690.0 | Median :3603 | Median :4359 |
+|     | Mean : 674.1   | Mean :3664   | Mean :4338   |
+|     | 3rd Qu.: 904.0 | 3rd Qu.:4841 | 3rd Qu.:5875 |
+|     | Max. :3065.0   | Max. :6435   | Max. :7525   |
 
 ## Rentals by Year
 
@@ -155,8 +157,8 @@ bikes %>%
 
 | yr   | total\_rentals | avg\_rentals |
 |:-----|---------------:|-------------:|
-| 2019 |         180221 |         3466 |
-| 2020 |         275282 |         5194 |
+| 2011 |         180221 |         3466 |
+| 2012 |         275282 |         5194 |
 
 ## Types of weather by season
 
@@ -165,15 +167,15 @@ season. 1 represents ‘Clear to some clouds’, 2 represents ‘Misty’, and 3
 represents ‘Light snow or rain’.
 
 ``` r
-table(bikes$season, bikes$weathersit)
+knitr::kable(table(bikes$season, bikes$weathersit))
 ```
 
-    ##         
-    ##           1  2  3
-    ##   Fall   18  8  0
-    ##   Spring 18  8  0
-    ##   Summer 15 12  0
-    ##   Winter 15  9  2
+|        |   1 |   2 |   3 |
+|:-------|----:|----:|----:|
+| Fall   |  18 |   8 |   0 |
+| Spring |  18 |   8 |   0 |
+| Summer |  15 |  12 |   0 |
+| Winter |  15 |   9 |   2 |
 
 ## Rentals by Weather
 
@@ -193,6 +195,21 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
 
 ![](Report-Monday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
+``` r
+weather_summary <- 
+  bikes %>%
+  group_by(weathersit) %>%
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+
+weather_min <- switch(which.min(weather_summary$avg_rentals),
+                               "clear weather",
+                                                             "misty weather",
+                                                             "weather with light snow or rain")
+```
+
+According to the above box plot, it can be seen that weather with light
+snow or rain brings out the least amount of total users.
+
 ## Casual vs. Registered bikers
 
 Below is a chart of the relationship between casual and registered
@@ -203,12 +220,10 @@ weekday but more casual users on the weekend.
 ``` r
 ggplot(bikes, aes(casual, registered)) +
   geom_point() +
-  geom_smooth(method = 'lm') +
+  geom_smooth(formula = 'y ~ x', method = 'lm') +
   theme_minimal() +
   labs(title = 'Registered versus Casual Renters')
 ```
-
-    ## `geom_smooth()` using formula 'y ~ x'
 
 ![](Report-Monday_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
@@ -233,11 +248,40 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
 
 ![](Report-Monday_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-## Holiday and Temp/Hum data
+``` r
+month_max <- month.name[which.max(plot_mth$avg_bikers)]
+month_min <- month.name[which.min(plot_mth$avg_bikers)]
+
+user_max <- max(plot_mth$avg_bikers)
+user_min <- min(plot_mth$avg_bikers)
+
+changes <- rep(0, 11)
+diff_mth <- rep("x", 11)
+
+for (i in 2:12){
+  diff_mth[i - 1] <- paste(month.name[i - 1], "to", month.name[i])
+  changes[i - 1] <- round(plot_mth$avg_bikers[i] - plot_mth$avg_bikers[i - 1])
+}
+
+
+diff_tab_mth <- as_tibble(cbind(diff_mth, changes))
+```
+
+According to the graph, July has the highest number of users with a
+value of 5792. The month with the lowest number of users is January with
+an average of 1927.
+
+The largest decrease in month to month users was November to December
+with an average change of -1161.
+
+The largest increase in month to month users was March to April with an
+average change of 970.
+
+## Holiday and Temperature / Humidity data
 
 We would like to see what effect public holidays have on the types of
-bicycle users for a given day. In this case, Monday show the following
-relationships:
+bicycle users on average for a given day. In this case, Monday data
+shows the following relationships:
 
 ``` r
 bikes %>% ggplot(aes(x = as.factor(workingday), y = casual)) + geom_boxplot() + 
@@ -283,7 +327,7 @@ ggplot(bike_temp, aes(x = temp_norm, y = cnt, col = type, shape = type)) +
 
 ![](Report-Monday_files/figure-gfm/temp_hum-1.png)<!-- -->
 
-Next the affect of humidity:
+Next the effect of humidity:
 
 ``` r
 bikes%>% ggplot(aes(x = hum, y = cnt)) + geom_point() + geom_smooth(formula = 'y ~ x', method = 'loess') +
@@ -531,8 +575,7 @@ print(boost_fit)
     ## 
     ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage
-    ##  = 0.1 and n.minobsinnode = 10.
+    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.
 
 ``` r
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
@@ -552,27 +595,52 @@ knitr::kable(results_tab[boost_min,], digits = 2)
 
 # Comparison
 
+Here we compare the 4 models developed earlier. Each model was applied
+to a test set and the results were then used to calculate MSE. Below are
+the results.
+
 ``` r
 lm_pred <- predict(lm.fit, newdata = test)
 lm_pred1 <- predict(lm.fit1, newdata = test)
 rf_pred <- predict(rf_fit, newdata = test)
 boost_pred <- predict(boost_fit, newdata = test)
 
+prediction_values <- as_tibble(cbind(lm_pred, lm_pred1, rf_pred, boost_pred))
+
 lm_MSE <- mean((lm_pred - test$cnt)^2)
 lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
-rf_pred <- mean((rf_pred - test$cnt)^2)
+rf_MSE <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-comp <- data.frame('Linear Model 1' = lm_MSE, 'Linear Model 2' = lm_MSE1, 'Random Forest Model' = rf_pred, 'Boosting Model' = boost_MSE)
+comp <- data.frame('Linear Model 1' = lm_MSE, 
+                   'Linear Model 2' = lm_MSE1, 
+                   'Random Forest Model' = rf_MSE, 
+                   'Boosting Model' = boost_MSE)
 
-knitr::kable(t(comp))
+knitr::kable(t(comp), col.names = "MSE")
 ```
 
-|                     |          |
+|                     |      MSE |
 |:--------------------|---------:|
 | Linear.Model.1      | 991231.5 |
 | Linear.Model.2      | 953968.2 |
 | Random.Forest.Model | 828946.9 |
 | Boosting.Model      | 509294.0 |
 
-Boosting.Model achieves the lowest test MSE of 5.0929405^{5}.
+It was found that Boosting.Model achieves the lowest test MSE of
+5.0929405^{5} for Monday data.
+
+Below is a graph of the Actual vs Predicted results:
+
+``` r
+index_val <- (which.min(t(comp)))
+
+results_plot <- as_tibble(cbind("preds" = prediction_values[[index_val]], "actual" = test$cnt))
+
+ggplot(data = results_plot, aes(preds, actual)) + geom_point() +
+     labs(x = paste(names(which.min(comp)), "Predictions"), y = "Actual Values",
+     title = paste(names(which.min(comp)), "Actual vs Predicted Values")) +
+     geom_abline(slope = 1, intercept = 0, col = 'red')
+```
+
+![](Report-Monday_files/figure-gfm/actual_pred-1.png)<!-- -->
