@@ -299,15 +299,6 @@ set.seed(10)
 lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
-```
-
-    ## Warning in preProcess.default(thresh = 0.95, k = 5, freqCut = 19, uniqueCut =
-    ## 10, : These variables have zero variances: weathersit3
-
-    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
-    ## may be misleading
-
-``` r
 lm.fit
 ```
 
@@ -330,12 +321,11 @@ Our first linear model has an R<sup>2</sup> of 795.3769648.
 
 ### Linear Fit 2
 
-Using transformations of predictors identified in the first linear fit
-and dropping the year predictor (in an effort to forecast future usage).
+Using transformations of predictors identified in the first linear fit.
 
 ``` r
 set.seed(10)
-lm.fit1 <- train(cnt ~ season + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit1 <- train(cnt ~ season + yr + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit1
@@ -344,19 +334,19 @@ lm.fit1
     ## Linear Regression 
     ## 
     ## 73 samples
-    ##  5 predictor
+    ##  6 predictor
     ## 
-    ## Pre-processing: centered (10), scaled (10) 
+    ## Pre-processing: centered (11), scaled (11) 
     ## Resampling: Cross-Validated (10 fold) 
     ## Summary of sample sizes: 65, 65, 66, 65, 66, 66, ... 
     ## Resampling results:
     ## 
-    ##   RMSE     Rsquared   MAE     
-    ##   1102.85  0.6457238  925.2214
+    ##   RMSE      Rsquared   MAE    
+    ##   751.5873  0.8391144  598.269
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The R<sup>2</sup> value of the model changed to 1102.8503247
+The R<sup>2</sup> value of the model changed to 751.5872519
 
 ## Ensemble Tree
 
@@ -394,7 +384,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
                           n.minobsinnode = 10)
 
 boost_fit <-  train(cnt ~ ., 
-                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
+                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), 
                     method = "gbm", 
                     verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
@@ -411,45 +401,45 @@ print(boost_fit)
     ## Stochastic Gradient Boosting 
     ## 
     ## 73 samples
-    ##  7 predictor
+    ##  8 predictor
     ## 
     ## No pre-processing
     ## Resampling: Cross-Validated (10 fold, repeated 3 times) 
     ## Summary of sample sizes: 66, 65, 65, 65, 65, 65, ... 
     ## Resampling results across tuning parameters:
     ## 
-    ##   shrinkage  interaction.depth  n.trees  RMSE      Rsquared   MAE     
-    ##   0.001      1                   20      1737.892  0.4471647  1394.428
-    ##   0.001      1                  100      1697.282  0.4423049  1369.265
-    ##   0.001      1                  500      1559.973  0.4412381  1298.337
-    ##   0.001      3                   20      1737.551  0.4387575  1393.561
-    ##   0.001      3                  100      1693.740  0.4510489  1365.853
-    ##   0.001      3                  500      1545.237  0.4476577  1289.393
-    ##   0.001      5                   20      1737.585  0.4483385  1393.639
-    ##   0.001      5                  100      1694.028  0.4478414  1365.700
-    ##   0.001      5                  500      1544.390  0.4495366  1288.372
-    ##   0.010      1                   20      1652.149  0.4365833  1344.252
-    ##   0.010      1                  100      1473.642  0.4483679  1251.938
-    ##   0.010      1                  500      1342.420  0.4670161  1187.845
-    ##   0.010      3                   20      1647.857  0.4511360  1341.580
-    ##   0.010      3                  100      1450.682  0.4538022  1237.955
-    ##   0.010      3                  500      1339.999  0.4721927  1175.296
-    ##   0.010      5                   20      1649.346  0.4418863  1342.024
-    ##   0.010      5                  100      1457.946  0.4487328  1243.845
-    ##   0.010      5                  500      1347.913  0.4649167  1185.072
-    ##   0.100      1                   20      1407.447  0.4426205  1226.342
-    ##   0.100      1                  100      1329.613  0.4763872  1160.559
-    ##   0.100      1                  500      1325.271  0.5020250  1121.079
-    ##   0.100      3                   20      1370.841  0.4631470  1186.175
-    ##   0.100      3                  100      1333.129  0.4676610  1155.652
-    ##   0.100      3                  500      1362.123  0.4685465  1151.280
-    ##   0.100      5                   20      1395.851  0.4435076  1218.400
-    ##   0.100      5                  100      1318.804  0.4847400  1149.298
-    ##   0.100      5                  500      1346.896  0.4825130  1139.068
+    ##   shrinkage  interaction.depth  n.trees  RMSE       Rsquared   MAE      
+    ##   0.001      1                   20      1738.0909  0.5099345  1393.9075
+    ##   0.001      1                  100      1697.2178  0.5213435  1365.3508
+    ##   0.001      1                  500      1538.2159  0.5789252  1245.2809
+    ##   0.001      3                   20      1735.8144  0.6076083  1391.0560
+    ##   0.001      3                  100      1684.6202  0.6182622  1351.6036
+    ##   0.001      3                  500      1486.8582  0.6470900  1187.1183
+    ##   0.001      5                   20      1735.9764  0.6187760  1391.1311
+    ##   0.001      5                  100      1684.7865  0.6233656  1351.4338
+    ##   0.001      5                  500      1487.9485  0.6494165  1187.7423
+    ##   0.010      1                   20      1649.1287  0.5327076  1331.3932
+    ##   0.010      1                  100      1398.2924  0.6163837  1128.9400
+    ##   0.010      1                  500      1028.4594  0.7129727   807.9488
+    ##   0.010      3                   20      1628.2342  0.6385100  1307.2839
+    ##   0.010      3                  100      1320.7608  0.6691349  1039.9535
+    ##   0.010      3                  500       962.2232  0.7357640   735.5945
+    ##   0.010      5                   20      1630.8654  0.6228646  1309.6462
+    ##   0.010      5                  100      1332.5015  0.6626448  1050.1001
+    ##   0.010      5                  500       971.9830  0.7323832   744.7821
+    ##   0.100      1                   20      1240.5887  0.6355194  1007.1107
+    ##   0.100      1                  100       983.5621  0.7345245   755.5325
+    ##   0.100      1                  500       952.6332  0.7578123   731.4043
+    ##   0.100      3                   20      1139.2996  0.6719673   890.3783
+    ##   0.100      3                  100       932.5326  0.7459887   698.0666
+    ##   0.100      3                  500       896.4162  0.7806717   659.1091
+    ##   0.100      5                   20      1145.8177  0.6871101   901.0546
+    ##   0.100      5                  100       922.2325  0.7542120   691.7070
+    ##   0.100      5                  500       884.9143  0.7918749   644.3137
     ## 
     ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final values used for the model were n.trees = 100, interaction.depth =
+    ## The final values used for the model were n.trees = 500, interaction.depth =
     ##  5, shrinkage = 0.1 and n.minobsinnode = 10.
 
 ``` r
@@ -464,8 +454,24 @@ boost_min <- which.min(results_tab$RMSE)
 knitr::kable(results_tab[boost_min,])
 ```
 
-| shrinkage | interaction.depth | n.trees |     RMSE | Rsquared |
-|----------:|------------------:|--------:|---------:|---------:|
-|       0.1 |                 5 |     100 | 1318.804 |  0.48474 |
+| shrinkage | interaction.depth | n.trees |     RMSE |  Rsquared |
+|----------:|------------------:|--------:|---------:|----------:|
+|       0.1 |                 5 |     500 | 884.9143 | 0.7918749 |
 
 # Comparison
+
+``` r
+lm_pred <- predict(lm.fit, newdata = test)
+lm_pred1 <- predict(lm.fit1, newdata = test)
+boost_pred <- predict(boost_fit, newdata = test)
+
+lm_MSE <- mean((lm_pred - test$cnt)^2)
+lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+boost_MSE <- mean((boost_pred - test$cnt)^2)
+
+print(c(lm_MSE, lm_MSE1, boost_MSE))
+```
+
+    ## [1] 991231.5 953968.2 509294.0
+
+\`\`\`

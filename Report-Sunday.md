@@ -150,7 +150,7 @@ ggplot(bikes, aes(factor(weathersit), cnt)) +
   theme_minimal()
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ## Casual vs. Registered bikers
 
@@ -169,7 +169,7 @@ ggplot(bikes, aes(casual, registered)) +
 
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ## Average bikers by month
 
@@ -190,7 +190,7 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
   scale_x_discrete(labels = month.abb)
 ```
 
-![](Report-Sunday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](Report-Sunday_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ## Holiday and Temp/Hum data
 
@@ -299,13 +299,6 @@ set.seed(10)
 lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
-```
-
-    ## Warning in preProcess.default(thresh = 0.95, k = 5, freqCut = 19, uniqueCut = 10, : These variables have zero variances: weathersit3
-
-    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit may be misleading
-
-``` r
 lm.fit
 ```
 
@@ -328,12 +321,11 @@ Our first linear model has an R<sup>2</sup> of 1026.1885563.
 
 ### Linear Fit 2
 
-Using transformations of predictors identified in the first linear fit
-and dropping the year predictor (in an effort to forecast future usage).
+Using transformations of predictors identified in the first linear fit.
 
 ``` r
 set.seed(10)
-lm.fit1 <- train(cnt ~ season + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit1 <- train(cnt ~ season + yr + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit1
@@ -342,19 +334,19 @@ lm.fit1
     ## Linear Regression 
     ## 
     ## 73 samples
-    ##  5 predictor
+    ##  6 predictor
     ## 
-    ## Pre-processing: centered (10), scaled (10) 
+    ## Pre-processing: centered (11), scaled (11) 
     ## Resampling: Cross-Validated (10 fold) 
     ## Summary of sample sizes: 65, 65, 66, 65, 66, 66, ... 
     ## Resampling results:
     ## 
     ##   RMSE      Rsquared   MAE     
-    ##   1226.021  0.6135773  1015.585
+    ##   1026.636  0.7003754  799.5864
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The R<sup>2</sup> value of the model changed to 1226.0214354
+The R<sup>2</sup> value of the model changed to 1026.6357035
 
 ## Ensemble Tree
 
@@ -392,7 +384,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
                           n.minobsinnode = 10)
 
 boost_fit <-  train(cnt ~ ., 
-                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
+                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), 
                     method = "gbm", 
                     verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
@@ -409,45 +401,45 @@ print(boost_fit)
     ## Stochastic Gradient Boosting 
     ## 
     ## 73 samples
-    ##  7 predictor
+    ##  8 predictor
     ## 
     ## No pre-processing
     ## Resampling: Cross-Validated (10 fold, repeated 3 times) 
     ## Summary of sample sizes: 66, 65, 65, 65, 65, 65, ... 
     ## Resampling results across tuning parameters:
     ## 
-    ##   shrinkage  interaction.depth  n.trees  RMSE      Rsquared   MAE      
-    ##   0.001      1                   20      1840.274  0.5731700  1492.9448
-    ##   0.001      1                  100      1771.255  0.5762571  1435.0782
-    ##   0.001      1                  500      1530.326  0.5761193  1246.5530
-    ##   0.001      3                   20      1839.035  0.6212258  1491.8567
-    ##   0.001      3                  100      1765.472  0.6189569  1429.9138
-    ##   0.001      3                  500      1502.440  0.6241954  1222.8622
-    ##   0.001      5                   20      1839.270  0.6136201  1492.1937
-    ##   0.001      5                  100      1766.023  0.6148733  1430.3663
-    ##   0.001      5                  500      1501.900  0.6250300  1221.8237
-    ##   0.010      1                   20      1697.665  0.5633687  1376.5952
-    ##   0.010      1                  100      1389.918  0.5779336  1159.1266
-    ##   0.010      1                  500      1222.832  0.6190666  1073.5005
-    ##   0.010      3                   20      1687.141  0.6102919  1365.4401
-    ##   0.010      3                  100      1337.045  0.6301040  1112.6265
-    ##   0.010      3                  500      1164.931  0.6475974  1001.5715
-    ##   0.010      5                   20      1687.537  0.6066940  1365.5793
-    ##   0.010      5                  100      1336.163  0.6324267  1113.4914
-    ##   0.010      5                  500      1161.679  0.6552263  1001.3497
-    ##   0.100      1                   20      1283.582  0.5974780  1098.4953
-    ##   0.100      1                  100      1177.186  0.6389430  1027.2645
-    ##   0.100      1                  500      1257.072  0.5983659  1064.7413
-    ##   0.100      3                   20      1252.418  0.6159295  1084.2624
-    ##   0.100      3                  100      1208.206  0.6246697  1017.3552
-    ##   0.100      3                  500      1307.798  0.5706488  1076.9113
-    ##   0.100      5                   20      1232.841  0.6328954  1066.7053
-    ##   0.100      5                  100      1174.029  0.6361333   988.6317
-    ##   0.100      5                  500      1303.932  0.5701083  1082.0755
+    ##   shrinkage  interaction.depth  n.trees  RMSE       Rsquared   MAE      
+    ##   0.001      1                   20      1840.3221  0.5757905  1493.0212
+    ##   0.001      1                  100      1771.5998  0.5787438  1435.5235
+    ##   0.001      1                  500      1530.9440  0.6054489  1247.2737
+    ##   0.001      3                   20      1838.2792  0.6687314  1491.3589
+    ##   0.001      3                  100      1761.7458  0.6643410  1427.6782
+    ##   0.001      3                  500      1483.1440  0.6825958  1206.2418
+    ##   0.001      5                   20      1838.7181  0.6456000  1491.7626
+    ##   0.001      5                  100      1762.2846  0.6595348  1428.1076
+    ##   0.001      5                  500      1483.0400  0.6828798  1205.6452
+    ##   0.010      1                   20      1698.4968  0.5655502  1377.1134
+    ##   0.010      1                  100      1353.2797  0.6565321  1108.3018
+    ##   0.010      1                  500      1015.0552  0.7470200   858.7482
+    ##   0.010      3                   20      1678.3392  0.6594732  1361.1719
+    ##   0.010      3                  100      1283.5388  0.7091377  1048.8383
+    ##   0.010      3                  500       969.3181  0.7612156   806.1670
+    ##   0.010      5                   20      1679.7214  0.6532403  1361.6328
+    ##   0.010      5                  100      1288.1646  0.7113764  1053.1609
+    ##   0.010      5                  500       963.1062  0.7656477   802.0867
+    ##   0.100      1                   20      1148.6922  0.7103737   969.4285
+    ##   0.100      1                  100       968.4765  0.7572250   796.7408
+    ##   0.100      1                  500       951.9364  0.7695029   773.2968
+    ##   0.100      3                   20      1108.8465  0.7207993   935.1638
+    ##   0.100      3                  100       962.3362  0.7524299   777.2414
+    ##   0.100      3                  500       975.3889  0.7492407   787.4195
+    ##   0.100      5                   20      1094.5970  0.7362154   924.9330
+    ##   0.100      5                  100       946.0414  0.7609759   762.9541
+    ##   0.100      5                  500       948.7343  0.7555612   774.0997
     ## 
     ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage = 0.01 and n.minobsinnode = 10.
+    ## The final values used for the model were n.trees = 100, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.
 
 ``` r
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
@@ -463,6 +455,22 @@ knitr::kable(results_tab[boost_min,])
 
 | shrinkage | interaction.depth | n.trees |     RMSE |  Rsquared |
 |----------:|------------------:|--------:|---------:|----------:|
-|      0.01 |                 5 |     500 | 1161.679 | 0.6552263 |
+|       0.1 |                 5 |     100 | 946.0414 | 0.7609759 |
 
 # Comparison
+
+``` r
+lm_pred <- predict(lm.fit, newdata = test)
+lm_pred1 <- predict(lm.fit1, newdata = test)
+boost_pred <- predict(boost_fit, newdata = test)
+
+lm_MSE <- mean((lm_pred - test$cnt)^2)
+lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+boost_MSE <- mean((boost_pred - test$cnt)^2)
+
+print(c(lm_MSE, lm_MSE1, boost_MSE))
+```
+
+    ## [1]  803770.6 1543280.4  473081.3
+
+\`\`\`

@@ -214,7 +214,7 @@ summary(lm_fit_select)
 step(lm_fit_select)
 ```
 
-```{r}
+```{r lm_fit1, warning = FALSE, message = FALSE}
 set.seed(10)
 lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
@@ -226,11 +226,11 @@ Our first linear model has an R^2^ of `r lm.fit$results$RMSE`.
 
 ### Linear Fit 2
 
-Using transformations of predictors identified in the first linear fit and dropping the year predictor (in an effort to forecast future usage). 
+Using transformations of predictors identified in the first linear fit. 
 
-```{r lm_fit2, warning=FALSE, message=FALSE}
+```{r lm_fit2, warning = FALSE, message = FALSE}
 set.seed(10)
-lm.fit1 <- train(cnt ~ season + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit1 <- train(cnt ~ season + yr + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit1
@@ -269,7 +269,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
                           n.minobsinnode = 10)
 
 boost_fit <-  train(cnt ~ ., 
-                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), 
+                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), 
                     method = "gbm", 
                     verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
@@ -293,3 +293,18 @@ knitr::kable(results_tab[boost_min,])
 ```
 
 # Comparison
+
+```{r comparison, message = FALSE, warning = FALSE}
+
+lm_pred <- predict(lm.fit, newdata = test)
+lm_pred1 <- predict(lm.fit1, newdata = test)
+boost_pred <- predict(boost_fit, newdata = test)
+
+lm_MSE <- mean((lm_pred - test$cnt)^2)
+lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+boost_MSE <- mean((boost_pred - test$cnt)^2)
+
+print(c(lm_MSE, lm_MSE1, boost_MSE))
+```
+
+```

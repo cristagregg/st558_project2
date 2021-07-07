@@ -359,11 +359,8 @@ body {
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>lm.fit <span class="ot">&lt;-</span> <span class="fu">train</span>(cnt <span class="sc">~</span> season <span class="sc">+</span> yr <span class="sc">+</span> weathersit <span class="sc">+</span> atemp <span class="sc">+</span> hum <span class="sc">+</span> windspeed, <span class="at">data =</span> train[, <span class="dv">2</span><span class="sc">:</span><span class="dv">12</span>], <span class="at">method =</span> <span class="st">&#39;lm&#39;</span>,</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">preProcess =</span> <span class="fu">c</span>(<span class="st">&#39;center&#39;</span>, <span class="st">&#39;scale&#39;</span>),</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&#39;cv&#39;</span>, <span class="at">number =</span> <span class="dv">10</span>))</span></code></pre></div>
-<pre><code>## Warning in preProcess.default(thresh = 0.95, k = 5, freqCut = 19, uniqueCut = 10, : These variables have zero variances: weathersit3
-
-## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit may be misleading</code></pre>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>lm.fit</span></code></pre></div>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&#39;cv&#39;</span>, <span class="at">number =</span> <span class="dv">10</span>))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>lm.fit</span></code></pre></div>
 <pre><code>## Linear Regression 
 ## 
 ## 73 samples
@@ -380,98 +377,98 @@ body {
 ## Tuning parameter &#39;intercept&#39; was held constant at a value of TRUE</code></pre>
 <p>Our first linear model has an R<sup>2</sup> of 795.3769648.</p>
 <h3 id="linear-fit-2">Linear Fit 2</h3>
-<p>Using transformations of predictors identified in the first linear fit and dropping the year predictor (in an effort to forecast future usage).</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>lm.fit1 <span class="ot">&lt;-</span> <span class="fu">train</span>(cnt <span class="sc">~</span> season <span class="sc">+</span> weathersit <span class="sc">+</span> <span class="fu">poly</span>(hum, <span class="dv">3</span>) <span class="sc">+</span> <span class="fu">I</span>(atemp<span class="sc">^</span><span class="fl">0.5</span>) <span class="sc">+</span> windspeed, <span class="at">data =</span> train[, <span class="dv">2</span><span class="sc">:</span><span class="dv">12</span>], <span class="at">method =</span> <span class="st">&#39;lm&#39;</span>,</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">preProcess =</span> <span class="fu">c</span>(<span class="st">&#39;center&#39;</span>, <span class="st">&#39;scale&#39;</span>),</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&#39;cv&#39;</span>, <span class="at">number =</span> <span class="dv">10</span>))</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>lm.fit1</span></code></pre></div>
+<p>Using transformations of predictors identified in the first linear fit.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>lm.fit1 <span class="ot">&lt;-</span> <span class="fu">train</span>(cnt <span class="sc">~</span> season <span class="sc">+</span> yr <span class="sc">+</span> weathersit <span class="sc">+</span> <span class="fu">poly</span>(hum, <span class="dv">3</span>) <span class="sc">+</span> <span class="fu">I</span>(atemp<span class="sc">^</span><span class="fl">0.5</span>) <span class="sc">+</span> windspeed, <span class="at">data =</span> train[, <span class="dv">2</span><span class="sc">:</span><span class="dv">12</span>], <span class="at">method =</span> <span class="st">&#39;lm&#39;</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">preProcess =</span> <span class="fu">c</span>(<span class="st">&#39;center&#39;</span>, <span class="st">&#39;scale&#39;</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&#39;cv&#39;</span>, <span class="at">number =</span> <span class="dv">10</span>))</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>lm.fit1</span></code></pre></div>
 <pre><code>## Linear Regression 
 ## 
 ## 73 samples
-##  5 predictor
+##  6 predictor
 ## 
-## Pre-processing: centered (10), scaled (10) 
+## Pre-processing: centered (11), scaled (11) 
 ## Resampling: Cross-Validated (10 fold) 
 ## Summary of sample sizes: 65, 65, 66, 65, 66, 66, ... 
 ## Resampling results:
 ## 
-##   RMSE     Rsquared   MAE     
-##   1102.85  0.6457238  925.2214
+##   RMSE      Rsquared   MAE    
+##   751.5873  0.8391144  598.269
 ## 
 ## Tuning parameter &#39;intercept&#39; was held constant at a value of TRUE</code></pre>
-<p>The R<sup>2</sup> value of the model changed to 1102.8503247</p>
+<p>The R<sup>2</sup> value of the model changed to 751.5872519</p>
 <h2 id="ensemble-tree">Ensemble Tree</h2>
 <p>Ensemble trees methods come in many types and are very versatile when it comes to regression or classification. For the following we will be using the two most common and well known methods, Random Forests (a form of bagging) and Boosting. Both these tree based methods involve optimization during the development process. In the case of random forests, the optimization involves varying the number of predictors used. This is done to mitigate the effects of one or more predictors from overshadowing other predictors. Boosting is method where the final model is developed through an iterative combination of weaker models where each interation builds upon the last. While both methods are very flexible and tend to process good results the models themselves are as interpretable as linear regression. We normally just analyze the output of the models.</p>
 <h3 id="random-forests">Random Forests</h3>
 <h3 id="boosting-model">Boosting Model</h3>
 <p>The following are the results of Boosting model development using the provided bike data</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>trctrl <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&quot;repeatedcv&quot;</span>, </span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">number =</span> <span class="dv">10</span>, </span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">repeats =</span> <span class="dv">3</span>)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2020</span>)</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>boost_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">n.trees =</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="dv">100</span>, <span class="dv">500</span>),</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">interaction.depth =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>),</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">shrinkage =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.01</span>, <span class="fl">0.001</span>),</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">n.minobsinnode =</span> <span class="dv">10</span>)</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>boost_fit <span class="ot">&lt;-</span>  <span class="fu">train</span>(cnt <span class="sc">~</span> ., </span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> <span class="fu">select</span>(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit), </span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">method =</span> <span class="st">&quot;gbm&quot;</span>, </span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>                    <span class="at">verbose =</span> F, <span class="co">#suppresses excessive printing while model is training</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">trControl =</span> trctrl, </span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>                    <span class="at">tuneGrid =</span> <span class="fu">data.frame</span>(boost_grid))</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>trctrl <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">&quot;repeatedcv&quot;</span>, </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">number =</span> <span class="dv">10</span>, </span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">repeats =</span> <span class="dv">3</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2020</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>boost_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">n.trees =</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="dv">100</span>, <span class="dv">500</span>),</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">interaction.depth =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>),</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">shrinkage =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.01</span>, <span class="fl">0.001</span>),</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">n.minobsinnode =</span> <span class="dv">10</span>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>boost_fit <span class="ot">&lt;-</span>  <span class="fu">train</span>(cnt <span class="sc">~</span> ., </span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> <span class="fu">select</span>(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), </span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">method =</span> <span class="st">&quot;gbm&quot;</span>, </span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>                    <span class="at">verbose =</span> F, <span class="co">#suppresses excessive printing while model is training</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">trControl =</span> trctrl, </span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                    <span class="at">tuneGrid =</span> <span class="fu">data.frame</span>(boost_grid))</span></code></pre></div>
 <p>A total of 27 models were evaluated. Each differing by the combination of boosting parameters. The results are show below:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(boost_fit)</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(boost_fit)</span></code></pre></div>
 <pre><code>## Stochastic Gradient Boosting 
 ## 
 ## 73 samples
-##  7 predictor
+##  8 predictor
 ## 
 ## No pre-processing
 ## Resampling: Cross-Validated (10 fold, repeated 3 times) 
 ## Summary of sample sizes: 66, 65, 65, 65, 65, 65, ... 
 ## Resampling results across tuning parameters:
 ## 
-##   shrinkage  interaction.depth  n.trees  RMSE      Rsquared   MAE     
-##   0.001      1                   20      1737.892  0.4471647  1394.428
-##   0.001      1                  100      1697.282  0.4423049  1369.265
-##   0.001      1                  500      1559.973  0.4412381  1298.337
-##   0.001      3                   20      1737.551  0.4387575  1393.561
-##   0.001      3                  100      1693.740  0.4510489  1365.853
-##   0.001      3                  500      1545.237  0.4476577  1289.393
-##   0.001      5                   20      1737.585  0.4483385  1393.639
-##   0.001      5                  100      1694.028  0.4478414  1365.700
-##   0.001      5                  500      1544.390  0.4495366  1288.372
-##   0.010      1                   20      1652.149  0.4365833  1344.252
-##   0.010      1                  100      1473.642  0.4483679  1251.938
-##   0.010      1                  500      1342.420  0.4670161  1187.845
-##   0.010      3                   20      1647.857  0.4511360  1341.580
-##   0.010      3                  100      1450.682  0.4538022  1237.955
-##   0.010      3                  500      1339.999  0.4721927  1175.296
-##   0.010      5                   20      1649.346  0.4418863  1342.024
-##   0.010      5                  100      1457.946  0.4487328  1243.845
-##   0.010      5                  500      1347.913  0.4649167  1185.072
-##   0.100      1                   20      1407.447  0.4426205  1226.342
-##   0.100      1                  100      1329.613  0.4763872  1160.559
-##   0.100      1                  500      1325.271  0.5020250  1121.079
-##   0.100      3                   20      1370.841  0.4631470  1186.175
-##   0.100      3                  100      1333.129  0.4676610  1155.652
-##   0.100      3                  500      1362.123  0.4685465  1151.280
-##   0.100      5                   20      1395.851  0.4435076  1218.400
-##   0.100      5                  100      1318.804  0.4847400  1149.298
-##   0.100      5                  500      1346.896  0.4825130  1139.068
+##   shrinkage  interaction.depth  n.trees  RMSE       Rsquared   MAE      
+##   0.001      1                   20      1738.0909  0.5099345  1393.9075
+##   0.001      1                  100      1697.2178  0.5213435  1365.3508
+##   0.001      1                  500      1538.2159  0.5789252  1245.2809
+##   0.001      3                   20      1735.8144  0.6076083  1391.0560
+##   0.001      3                  100      1684.6202  0.6182622  1351.6036
+##   0.001      3                  500      1486.8582  0.6470900  1187.1183
+##   0.001      5                   20      1735.9764  0.6187760  1391.1311
+##   0.001      5                  100      1684.7865  0.6233656  1351.4338
+##   0.001      5                  500      1487.9485  0.6494165  1187.7423
+##   0.010      1                   20      1649.1287  0.5327076  1331.3932
+##   0.010      1                  100      1398.2924  0.6163837  1128.9400
+##   0.010      1                  500      1028.4594  0.7129727   807.9488
+##   0.010      3                   20      1628.2342  0.6385100  1307.2839
+##   0.010      3                  100      1320.7608  0.6691349  1039.9535
+##   0.010      3                  500       962.2232  0.7357640   735.5945
+##   0.010      5                   20      1630.8654  0.6228646  1309.6462
+##   0.010      5                  100      1332.5015  0.6626448  1050.1001
+##   0.010      5                  500       971.9830  0.7323832   744.7821
+##   0.100      1                   20      1240.5887  0.6355194  1007.1107
+##   0.100      1                  100       983.5621  0.7345245   755.5325
+##   0.100      1                  500       952.6332  0.7578123   731.4043
+##   0.100      3                   20      1139.2996  0.6719673   890.3783
+##   0.100      3                  100       932.5326  0.7459887   698.0666
+##   0.100      3                  500       896.4162  0.7806717   659.1091
+##   0.100      5                   20      1145.8177  0.6871101   901.0546
+##   0.100      5                  100       922.2325  0.7542120   691.7070
+##   0.100      5                  500       884.9143  0.7918749   644.3137
 ## 
 ## Tuning parameter &#39;n.minobsinnode&#39; was held constant at a value of 10
 ## RMSE was used to select the optimal model using the smallest value.
-## The final values used for the model were n.trees = 100, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>results_tab <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(boost_fit<span class="sc">$</span>results[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>)])</span></code></pre></div>
+## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>results_tab <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(boost_fit<span class="sc">$</span>results[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>)])</span></code></pre></div>
 <p>The attributes of the best model is shown here.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>boost_min <span class="ot">&lt;-</span> <span class="fu">which.min</span>(results_tab<span class="sc">$</span>RMSE)</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(results_tab[boost_min,])</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>boost_min <span class="ot">&lt;-</span> <span class="fu">which.min</span>(results_tab<span class="sc">$</span>RMSE)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(results_tab[boost_min,])</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -486,13 +483,24 @@ body {
 <tr class="odd">
 <td align="right">0.1</td>
 <td align="right">5</td>
-<td align="right">100</td>
-<td align="right">1318.804</td>
-<td align="right">0.48474</td>
+<td align="right">500</td>
+<td align="right">884.9143</td>
+<td align="right">0.7918749</td>
 </tr>
 </tbody>
 </table>
 <h1 id="comparison">Comparison</h1>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>lm_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(lm.fit, <span class="at">newdata =</span> test)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>lm_pred1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(lm.fit1, <span class="at">newdata =</span> test)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>boost_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(boost_fit, <span class="at">newdata =</span> test)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>lm_MSE <span class="ot">&lt;-</span> <span class="fu">mean</span>((lm_pred <span class="sc">-</span> test<span class="sc">$</span>cnt)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>lm_MSE1 <span class="ot">&lt;-</span> <span class="fu">mean</span>((lm_pred1 <span class="sc">-</span> test<span class="sc">$</span>cnt)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>boost_MSE <span class="ot">&lt;-</span> <span class="fu">mean</span>((boost_pred <span class="sc">-</span> test<span class="sc">$</span>cnt)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">c</span>(lm_MSE, lm_MSE1, boost_MSE))</span></code></pre></div>
+<pre><code>## [1] 991231.5 953968.2 509294.0</code></pre>
+<p>```</p>
 
 </body>
 </html>
