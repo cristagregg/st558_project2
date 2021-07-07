@@ -43,11 +43,12 @@ The following analysis breaks down bicycle sharing usage based on data gathered 
 |cnt| sum of both casual and registered users
 |*Sources*| *Raw data and more information can be found [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)*
 
-In addition to summary statistics, this report will also model bicycle users linear regression, random forests, and boosting. The model will help determine anticipated number of users based on readily available data. To achieve this, the response variables are casual, registered, and cnt. The other 13 variables will be the predictors for models developed later in this report. 
+In addition to summary statistics, this report will also model bicycle users by linear regression, random forests, and boosting. The model will help determine anticipated number of users based on readily available data. To achieve this, the response variables are casual, registered, and cnt. The other variables, not including the date and instant columns, will be the predictors for models developed later in this report. 
 
-# Data
+# Data  
+Here, we set up the data for the selected day of week and convert categorical variables to factors, and then split the data into a train and test set. 
 ```{r message=FALSE}
-set.seed(1)
+set.seed(1) #get the same splits every time
 bikes <- read_csv('day.csv')
 
 day_function <- function(x){
@@ -97,6 +98,12 @@ test <- bikes[-train_rows,] %>%
 ```
 
 # Summarizations
+## Summary statistics of users
+Below shows the summary statistics of bike users: casual, registered, and total.  
+
+```{r}
+summary(bikes[,14:16])
+```
 
 ## Rentals by Year
 
@@ -104,8 +111,17 @@ The following table tells us the total number of rentals for each of the two yea
 ```{r}
 bikes %>%
   group_by(yr) %>%
-  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
+  summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt))) %>%
+  knitr::kable()
 ```
+## Types of weather by season
+1 represents 'Clear to some clouds', 2 represents 'Misty', and 3 represents 'Light snow or rain'.
+
+```{r}
+table(bikes$season, bikes$weathersit)
+```
+
+
 ## Rentals by Weather  
 
 The following box plot shows us how many rentals we have for days that are sunny or partly cloudy, misty, or rainy/snowy. We may expect some differences in behavior between weekend days where less people might be inclined to ride their bikes for pleasure, versus weekdays when more people might brave moderately unpleasant weather to get to work. 
@@ -146,7 +162,7 @@ ggplot(plot_mth, aes(mnth, avg_bikers)) +
 
 ## Holiday and Temp/Hum data
 
-We would like to see what affect public holidays have on the types of bicycle users for a given day. In this case, `r params$day_of_week` show the following relationships:
+We would like to see what effect public holidays have on the types of bicycle users for a given day. In this case, `r params$day_of_week` show the following relationships:
 
 ```{r holiday}
 bikes %>% ggplot(aes(x = as.factor(workingday), y = casual)) + geom_boxplot() + 
@@ -164,7 +180,7 @@ bikes %>% ggplot(aes(x = as.factor(workingday), y = registered)) + geom_boxplot(
                 theme_minimal()
 ```
 
-Temperature and Humidity have an affect on the number of users on a given day
+Temperature and humidity have an effect on the number of users on a given day
 
 First, normalized temperature data (both actual temperature and perceived):
 ```{r, temp_hum}
@@ -201,13 +217,14 @@ corrplot(cor(bikes[ , c(11:16)]), method = "circle")
 ```
 
 
-# Modeling
+# Modeling  
+Now, we will fit two linear regression model, a random forest model, and a boosting model. We will use cross-validation to select the best tuning parameters for the ensemble based methods, and then compare all four models using the test MSE.  
 
 ## Linear Regression
-Linear regression is one of the most common methods for modeling. It looks at a set of predictors and estimates what will happen to the response if the predictors change. This model is highly interpretable, as it shows us the effect of each individual predictor as well as interactions. We can see if the change in the response goes up or down and in what quantity. Below we fit two linear regression models. 
+Linear regression is one of the most common methods for modeling. It looks at a set of predictors and estimates what will happen to the response if one of the predictors or a combination of predictors change. This model is highly interpretable, as it shows us the effect of each individual predictor as well as interactions. We can see if the change in the response goes up or down and in what quantity. The model is chosen by minimizing the squares of the distances between the estimated value and the actual value in the testing set. Below we fit two different linear regression models. 
 
 ### Linear Fit 1  
-The first model will have a subset of predictors chosen by stepwise selection. 
+The first model will have a subset of predictors chosen by stepwise selection. Once we have chosen an interesting set of predictors, we will use cross-validation to determine the RMSE and R^2^. 
 ```{r select subset of predictors, include=FALSE}
 lm_fit_select <- lm(cnt ~ ., data = train[ , c(2:4, 7:12)])
 summary(lm_fit_select) 
@@ -222,7 +239,7 @@ lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data =
 lm.fit
 ```
 
-Our first linear model has an R^2^ of `r lm.fit$results$RMSE`.  
+Our first linear model has an RMSE of `r round(lm.fit$results$RMSE,2)`.  
 
 ### Linear Fit 2
 
@@ -237,23 +254,28 @@ lm.fit1
 
 ```
 
-The R^2^ value of the model changed to `r lm.fit1$results$RMSE`
+The RMSE value of the model changed to `r round(lm.fit1$results$RMSE,2)`
 
 
 ## Ensemble Tree
 
-Ensemble trees methods come in many types and are very versatile when it comes to regression or classification. For the following we will be using the two most common and well known methods, Random Forests (a form of bagging) and Boosting. Both these tree based methods involve optimization during the development process. In the case of random forests, the optimization involves varying the number of predictors used. This is done to mitigate the effects of one or more predictors from overshadowing other predictors. Boosting is method where the final model is developed through an iterative combination of weaker models where each interation builds upon the last. While both methods are very flexible and tend to process good results the models themselves are as interpretable as linear regression. We normally just analyze the output of the models.   
+Ensemble trees methods come in many types and are very versatile when it comes to regression or classification. For the following, we will be using the two most common and well known methods: Random Forests (a form of bagging) and Boosting. Both these tree based methods involve optimization during the development process. In the case of random forests, the optimization involves varying the number of predictors used. This is done to mitigate the effects of one or more predictors from overshadowing other predictors. Boosting is a method where the final model is developed through an iterative combination of weaker models where each iteration builds upon the last. While both methods are very flexible and tend to process good results, the models themselves are not as interpretable as linear regression. We normally just analyze the output of the models.   
 
-### Random Forests
+### Random Forests 
+Below is the result of training with the random forest method. This method uses a different subset of predictors for each tree and averages the results across many trees, selected by bootstrapping. By reducing the number of predictors considered in each tree, we may be able to reduce the correlation between trees to improve our results. In the training model below, we vary the number of predictors used in each tree. 
 
-```{r ensemble}
-
-
+```{r ensemble, warning=FALSE}
+rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
+                preProcess = c('center', 'scale'),
+                tuneGrid = data.frame(mtry = 1:10))
+rf_fit
 ```
 
+The best model uses `r rf_fit$bestTune[[1]]` predictors. This gives an RMSE of `r round(min(rf_fit$results$RMSE),2)`.
+  
 ### Boosting Model
 
-The following are the results of Boosting model development using the provided bike data
+The following are the results of Boosting model development using the provided bike data.
 
 ```{r boosting, message = FALSE, warning = FALSE}
 
@@ -289,7 +311,7 @@ The attributes of the best model is shown here.
 ```{r}
 boost_min <- which.min(results_tab$RMSE)
 
-knitr::kable(results_tab[boost_min,])
+knitr::kable(results_tab[boost_min,], digits = 2)
 ```
 
 # Comparison
@@ -298,13 +320,16 @@ knitr::kable(results_tab[boost_min,])
 
 lm_pred <- predict(lm.fit, newdata = test)
 lm_pred1 <- predict(lm.fit1, newdata = test)
+rf_pred <- predict(rf_fit, newdata = test)
 boost_pred <- predict(boost_fit, newdata = test)
 
 lm_MSE <- mean((lm_pred - test$cnt)^2)
 lm_MSE1 <- mean((lm_pred1 - test$cnt)^2)
+rf_pred <- mean((rf_pred - test$cnt)^2)
 boost_MSE <- mean((boost_pred - test$cnt)^2)
 
-print(c(lm_MSE, lm_MSE1, boost_MSE))
+comp <- data.frame(lm_MSE, lm_MSE1, rf_pred, boost_MSE)
+knitr::kable(comp)
 ```
 
-```
+Boosting achieves the lowest test MSE of `r round(boost_MSE)`. 
