@@ -1,5 +1,7 @@
-# st558_project2
-This project will create predictive models and automate R markdown reports. You can find the link to each week's report below.   
+# ST558 Project2  
+### Crista Gregg and Halid Kopanski  
+
+This project analyzes the number of bicycle rentals from the Capital Bikeshare system for each day of the week over 2011 and 2012. You can find the link to each day's report below.   
   
 The analysis for [Monday is available here](Report-Monday.md).  
 The analysis for [Tuesday is available here](Report-Tuesday.md).  
