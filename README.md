@@ -4,6 +4,16 @@ This project analyzes the number of bicycle rentals from the Capital Bikeshare s
 
 This project requires the tidyverse, caret, knitr, and corrplot packages. 
 
+All reports are generated from a single Rmd file using the following code:
+```
+day_list <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
+for(i in day_list){
+  rmarkdown::render("ST558 Project 2.Rmd", params = list(day_of_week = i),
+                    output_file = paste0("Report-", i))
+}
+```
+
 Below are the links to each day's report:  
   
 The analysis for [Monday is available here](Report-Monday.md).  
