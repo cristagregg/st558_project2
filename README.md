@@ -13,3 +13,5 @@ The analysis for [Thursday is available here](Report-Thursday.md).
 The analysis for [Friday is available here](Report-Friday.md).  
 The analysis for [Saturday is available here](Report-Saturday.md).  
 The analysis for [Sunday is available here](Report-Sunday.md).  
+
+The code to generate the above reports is located [here](render_files.R).
