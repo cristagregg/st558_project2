@@ -4,7 +4,7 @@ This project analyzes the number of bicycle rentals from the Capital Bikeshare s
 
 This project requires the tidyverse, caret, knitr, and corrplot packages. 
 
-You can find the code to create the report [here](ST558 Project 2.Rmd) and below are the links to each day's report.
+Below are the links to each day's report:  
   
 The analysis for [Monday is available here](Report-Monday.md).  
 The analysis for [Tuesday is available here](Report-Tuesday.md).  
