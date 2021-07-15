@@ -83,6 +83,7 @@ bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
 bikes$workingday <- as.factor(bikes$workingday)
 bikes$weathersit <- as.factor(bikes$weathersit)
+levels(bikes$weathersit) <- c('Clear to some clouds', 'Misty', 'Light snow or rain')
 
 day <- params$day_of_week
 
@@ -92,9 +93,9 @@ bikes <- filter(bikes, weekday == day)
 #split data into train and test sets
 train_rows <- sample(nrow(bikes), 0.7*nrow(bikes))
 train <- bikes[train_rows,] %>% 
-  select(-instant, -weekday, -casual, -registered)
+  select(-instant, -weekday, -casual, -registered, -dteday)
 test <- bikes[-train_rows,] %>% 
-  select(-instant, -weekday, -casual, -registered)
+  select(-instant, -weekday, -casual, -registered, -dteday)
 ```
 
 # Summarizations
@@ -130,11 +131,9 @@ The following box plot shows us how many rentals we have for days that are sunny
 ggplot(bikes, aes(factor(weathersit), cnt)) +
   geom_boxplot() +
   labs(x = 'Type of Weather', y = 'Number of Rental Bikes', title = 'Rental Bikes by Type of Weather') +
-  scale_x_discrete(labels = c('Clear to some clouds', 'Misty', 'Light snow or rain')) +
   theme_minimal()
 
-weather_summary <- 
-  bikes %>%
+weather_summary <- bikes %>%
   group_by(weathersit) %>%
   summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
 
@@ -262,15 +261,16 @@ Linear regression is one of the most common methods for modeling. It looks at a 
 
 ### Linear Fit 1  
 The first model will have a subset of predictors chosen by stepwise selection. Once we have chosen an interesting set of predictors, we will use cross-validation to determine the RMSE and R^2^. 
-```{r select subset of predictors, include=FALSE}
-lm_fit_select <- lm(cnt ~ ., data = train[ , c(2:4, 7:12)])
-summary(lm_fit_select) 
-step(lm_fit_select)
+```{r select subset of predictors}
+lm_fit_select <- lm(cnt ~ ., data = train[ , c(1:3, 6:11)])
+model <- step(lm_fit_select)
+variables <- names(model$model)
+variables #variables we will use for our model
 ```
 
 ```{r lm_fit1, warning = FALSE, message = FALSE}
 set.seed(10)
-lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit <- train(cnt ~ ., data = train[variables], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit
@@ -280,15 +280,14 @@ Our first linear model has an RMSE of `r round(lm.fit$results$RMSE,2)`.
 
 ### Linear Fit 2
 
-Using transformations of predictors identified in the first linear fit. 
+Adding interactions to the terms included in the first model. 
 
 ```{r lm_fit2, warning = FALSE, message = FALSE}
 set.seed(10)
-lm.fit1 <- train(cnt ~ season + yr + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit1 <- train(cnt ~ . + .*., data = train[variables], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit1
-
 ```
 
 The RMSE value of the model changed to `r round(lm.fit1$results$RMSE,2)`.
@@ -302,7 +301,7 @@ Ensemble trees methods come in many types and are very versatile when it comes t
 Below is the result of training with the random forest method. This method uses a different subset of predictors for each tree and averages the results across many trees, selected by bootstrapping. By reducing the number of predictors considered in each tree, we may be able to reduce the correlation between trees to improve our results. In the training model below, we vary the number of predictors used in each tree. 
 
 ```{r ensemble, warning=FALSE, message=FALSE}
-rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
+rf_fit <- train(cnt ~ ., data = train, method = 'rf',
                 preProcess = c('center', 'scale'),
                 tuneGrid = data.frame(mtry = 1:10))
 rf_fit
@@ -328,7 +327,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
                           n.minobsinnode = 10)
 
 boost_fit <-  train(cnt ~ ., 
-                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), 
+                    data = train, 
                     method = "gbm", 
                     verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 

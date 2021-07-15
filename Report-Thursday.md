@@ -108,6 +108,7 @@ bikes$holiday <- as.factor(bikes$holiday)
 bikes$weekday <- as.factor(bikes$weekday)
 bikes$workingday <- as.factor(bikes$workingday)
 bikes$weathersit <- as.factor(bikes$weathersit)
+levels(bikes$weathersit) <- c('Clear to some clouds', 'Misty', 'Light snow or rain')
 
 day <- params$day_of_week
 
@@ -117,9 +118,9 @@ bikes <- filter(bikes, weekday == day)
 #split data into train and test sets
 train_rows <- sample(nrow(bikes), 0.7*nrow(bikes))
 train <- bikes[train_rows,] %>% 
-  select(-instant, -weekday, -casual, -registered)
+  select(-instant, -weekday, -casual, -registered, -dteday)
 test <- bikes[-train_rows,] %>% 
-  select(-instant, -weekday, -casual, -registered)
+  select(-instant, -weekday, -casual, -registered, -dteday)
 ```
 
 # Summarizations
@@ -170,12 +171,12 @@ represents ‘Light snow or rain’.
 knitr::kable(table(bikes$season, bikes$weathersit))
 ```
 
-|        |   1 |   2 |   3 |
-|:-------|----:|----:|----:|
-| Fall   |  20 |   7 |   1 |
-| Spring |  16 |   8 |   1 |
-| Summer |  18 |   7 |   1 |
-| Winter |  13 |  12 |   0 |
+|        | Clear to some clouds | Misty | Light snow or rain |
+|:-------|---------------------:|------:|-------------------:|
+| Fall   |                   20 |     7 |                  1 |
+| Spring |                   16 |     8 |                  1 |
+| Summer |                   18 |     7 |                  1 |
+| Winter |                   13 |    12 |                  0 |
 
 ## Rentals by Weather
 
@@ -189,15 +190,13 @@ people might brave moderately unpleasant weather to get to work.
 ggplot(bikes, aes(factor(weathersit), cnt)) +
   geom_boxplot() +
   labs(x = 'Type of Weather', y = 'Number of Rental Bikes', title = 'Rental Bikes by Type of Weather') +
-  scale_x_discrete(labels = c('Clear to some clouds', 'Misty', 'Light snow or rain')) +
   theme_minimal()
 ```
 
 ![](Report-Thursday_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
-weather_summary <- 
-  bikes %>%
+weather_summary <- bikes %>%
   group_by(weathersit) %>%
   summarise(total_rentals = sum(cnt), avg_rentals = round(mean(cnt)))
 
@@ -389,8 +388,49 @@ selection. Once we have chosen an interesting set of predictors, we will
 use cross-validation to determine the RMSE and R<sup>2</sup>.
 
 ``` r
+lm_fit_select <- lm(cnt ~ ., data = train[ , c(1:3, 6:11)])
+model <- step(lm_fit_select)
+```
+
+    ## Start:  AIC=949.71
+    ## cnt ~ season + yr + mnth + weathersit + temp + atemp + hum + 
+    ##     windspeed
+    ## 
+    ##              Df Sum of Sq      RSS     AIC
+    ## - temp        1      2803 20917299  947.72
+    ## - atemp       1     52294 20966790  947.89
+    ## <none>                    20914496  949.71
+    ## - hum         1    880367 21794863  950.68
+    ## - mnth       11   8869335 29783831  953.16
+    ## - season      3   3224091 24138588  954.03
+    ## - windspeed   1   2497331 23411828  955.83
+    ## - weathersit  2   4447899 25362395  959.59
+    ## - yr          1  71470684 92385180 1054.67
+    ## 
+    ## Step:  AIC=947.72
+    ## cnt ~ season + yr + mnth + weathersit + atemp + hum + windspeed
+    ## 
+    ##              Df Sum of Sq      RSS     AIC
+    ## <none>                    20917299  947.72
+    ## - hum         1    891241 21808540  948.72
+    ## - atemp       1   1384732 22302031  950.33
+    ## - mnth       11   9203097 30120396  951.97
+    ## - season      3   3261984 24179284  952.15
+    ## - windspeed   1   2521646 23438945  953.91
+    ## - weathersit  2   4709139 25626438  958.34
+    ## - yr          1  72029922 92947222 1053.10
+
+``` r
+variables <- names(model$model)
+variables #variables we will use for our model
+```
+
+    ## [1] "cnt"        "season"     "yr"         "mnth"       "weathersit" "atemp"     
+    ## [7] "hum"        "windspeed"
+
+``` r
 set.seed(10)
-lm.fit <- train(cnt ~ season + yr + weathersit + atemp + hum + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit <- train(cnt ~ ., data = train[variables], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit
@@ -399,27 +439,27 @@ lm.fit
     ## Linear Regression 
     ## 
     ## 72 samples
-    ##  6 predictor
+    ##  7 predictor
     ## 
-    ## Pre-processing: centered (9), scaled (9) 
+    ## Pre-processing: centered (20), scaled (20) 
     ## Resampling: Cross-Validated (10 fold) 
     ## Summary of sample sizes: 64, 64, 65, 64, 65, 66, ... 
     ## Resampling results:
     ## 
     ##   RMSE      Rsquared   MAE     
-    ##   734.6588  0.8446995  636.8947
+    ##   777.7939  0.8312946  630.1502
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-Our first linear model has an RMSE of 734.66.
+Our first linear model has an RMSE of 777.79.
 
 ### Linear Fit 2
 
-Using transformations of predictors identified in the first linear fit.
+Adding interactions to the terms included in the first model.
 
 ``` r
 set.seed(10)
-lm.fit1 <- train(cnt ~ season + yr + weathersit + poly(hum, 3) + I(atemp^0.5) + windspeed, data = train[, 2:12], method = 'lm',
+lm.fit1 <- train(cnt ~ . + .*., data = train[variables], method = 'lm',
                 preProcess = c('center', 'scale'),
                 trControl = trainControl(method = 'cv', number = 10))
 lm.fit1
@@ -428,19 +468,19 @@ lm.fit1
     ## Linear Regression 
     ## 
     ## 72 samples
-    ##  6 predictor
+    ##  7 predictor
     ## 
-    ## Pre-processing: centered (11), scaled (11) 
+    ## Pre-processing: centered (151), scaled (151) 
     ## Resampling: Cross-Validated (10 fold) 
     ## Summary of sample sizes: 64, 64, 65, 64, 65, 66, ... 
     ## Resampling results:
     ## 
     ##   RMSE      Rsquared   MAE     
-    ##   763.7467  0.8397823  653.2964
+    ##   22551.26  0.1764429  13936.99
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The RMSE value of the model changed to 763.75.
+The RMSE value of the model changed to 2.255126^{4}.
 
 ## Ensemble Tree
 
@@ -469,7 +509,7 @@ training model below, we vary the number of predictors used in each
 tree.
 
 ``` r
-rf_fit <- train(cnt ~ ., data = train[, 2:12], method = 'rf',
+rf_fit <- train(cnt ~ ., data = train, method = 'rf',
                 preProcess = c('center', 'scale'),
                 tuneGrid = data.frame(mtry = 1:10))
 rf_fit
@@ -520,7 +560,7 @@ boost_grid <- expand.grid(n.trees = c(20, 100, 500),
                           n.minobsinnode = 10)
 
 boost_fit <-  train(cnt ~ ., 
-                    data = select(train, cnt, hum, temp, atemp, windspeed, workingday, season, weathersit, yr), 
+                    data = train, 
                     method = "gbm", 
                     verbose = F, #suppresses excessive printing while model is training
                     trControl = trctrl, 
@@ -537,7 +577,7 @@ print(boost_fit)
     ## Stochastic Gradient Boosting 
     ## 
     ## 72 samples
-    ##  8 predictor
+    ## 10 predictors
     ## 
     ## No pre-processing
     ## Resampling: Cross-Validated (10 fold, repeated 3 times) 
@@ -553,29 +593,30 @@ print(boost_fit)
     ##   0.001      3                  500      1483.5103  0.7215642  1247.9871
     ##   0.001      5                   20      1803.0211  0.6302004  1534.0942
     ##   0.001      5                  100      1739.3401  0.6432298  1470.6524
-    ##   0.001      5                  500      1484.1487  0.7167768  1248.0569
+    ##   0.001      5                  500      1484.1420  0.7167665  1248.0472
     ##   0.010      1                   20      1674.8002  0.6618092  1410.3764
     ##   0.010      1                  100      1308.5856  0.7447496  1098.2456
-    ##   0.010      1                  500       890.3080  0.8099743   749.0178
+    ##   0.010      1                  500       890.2355  0.8099954   748.9062
     ##   0.010      3                   20      1664.0521  0.6612188  1403.4356
     ##   0.010      3                  100      1253.9133  0.7654264  1051.7556
-    ##   0.010      3                  500       846.6581  0.8229915   706.1512
+    ##   0.010      3                  500       846.6884  0.8229541   706.1216
     ##   0.010      5                   20      1669.1199  0.6666112  1407.5024
     ##   0.010      5                  100      1247.1704  0.7716133  1046.4042
-    ##   0.010      5                  500       848.7096  0.8231202   709.2721
+    ##   0.010      5                  500       848.5163  0.8232512   709.0930
     ##   0.100      1                   20      1079.9195  0.7586377   903.0052
     ##   0.100      1                  100       851.1249  0.8240164   687.4616
     ##   0.100      1                  500       825.6938  0.8306110   664.1847
     ##   0.100      3                   20      1029.5161  0.7643701   875.5980
-    ##   0.100      3                  100       833.0054  0.8207254   676.7827
-    ##   0.100      3                  500       819.9987  0.8300591   662.4598
-    ##   0.100      5                   20      1017.9158  0.7796758   867.1908
-    ##   0.100      5                  100       807.5492  0.8360027   653.5271
-    ##   0.100      5                  500       788.7523  0.8447483   634.1528
+    ##   0.100      3                  100       833.2091  0.8202480   676.6808
+    ##   0.100      3                  500       819.8197  0.8300415   661.8549
+    ##   0.100      5                   20      1017.7244  0.7798504   866.8972
+    ##   0.100      5                  100       806.6355  0.8363901   652.2746
+    ##   0.100      5                  500       790.5919  0.8439755   634.7244
     ## 
     ## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage = 0.1 and n.minobsinnode = 10.
+    ## The final values used for the model were n.trees = 500, interaction.depth = 5, shrinkage
+    ##  = 0.1 and n.minobsinnode = 10.
 
 ``` r
 results_tab <- as_tibble(boost_fit$results[,c(1,2,4:6)])
@@ -591,7 +632,7 @@ knitr::kable(results_tab[boost_min,], digits = 2)
 
 | shrinkage | interaction.depth | n.trees |   RMSE | Rsquared |
 |----------:|------------------:|--------:|-------:|---------:|
-|       0.1 |                 5 |     500 | 788.75 |     0.84 |
+|       0.1 |                 5 |     500 | 790.59 |     0.84 |
 
 # Comparison
 
@@ -620,12 +661,12 @@ comp <- data.frame('Linear Model 1' = lm_MSE,
 knitr::kable(t(comp), col.names = "MSE")
 ```
 
-|                     |       MSE |
-|:--------------------|----------:|
-| Linear.Model.1      | 1101089.2 |
-| Linear.Model.2      | 1050534.8 |
-| Random.Forest.Model |  906920.8 |
-| Boosting.Model      |  999711.1 |
+|                     |          MSE |
+|:--------------------|-------------:|
+| Linear.Model.1      | 1.161463e+06 |
+| Linear.Model.2      | 3.508864e+11 |
+| Random.Forest.Model | 9.069208e+05 |
+| Boosting.Model      | 9.997111e+05 |
 
 It was found that Random.Forest.Model achieves the lowest test MSE of
 9.0692082^{5} for Thursday data.
